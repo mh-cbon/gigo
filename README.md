@@ -10,7 +10,8 @@ type Todo struct {
 }
 
 type Todos implements<Mutexed (Slice .Todo "Name")> {
-  // it reads as a mutexed list of todo.
+  // it reads as a mutexed list of todo,
+  // where Name is an additionnal arg to define a FindByName method.
 }
 
 func (t *Todos) Hello(){fmt.Println("Hello")}
