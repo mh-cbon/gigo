@@ -143,6 +143,10 @@ func main() {
 	}
 
 	currentImplName := "" // the current implement being resolved in the origin file
+	//for every
+	// template XXXX struct{}
+	// func(of the template)...
+	// create a template.Template of its string
 	for _, i := range tplTypes {
 		// create a template.Template of the content of the template type.
 		tplName := fmt.Sprintf("%v%v", "tplType", i.GetSlugName())
@@ -168,6 +172,8 @@ func main() {
 		tplTypesTpl[tplName] = t
 
 		// install the template type as a func for an implement declaration
+		// implement decl => type XXX implements<Mutator()>
+		// Mutator is a func(struct)struct
 		name := i.GetSlugName()
 		implTplFuncs[name] = func(origin *glang.StructDecl) (*glang.StructDecl, error) {
 			// the provided argument becomes the template root dot {{.}}
@@ -210,9 +216,9 @@ func main() {
 	}
 	for _, i := range implTypes {
 		// foreach implements<...> declaration,
-		// create a template of <...>, where
-		// functions are type mutators(origin),
-		// and data are regular structs
+		// create a template of the identifier <...>, where
+		// functions are type mutators(originStructType),
+		// and data are the regular structs within the package
 		fmt.Println("----------------------------------")
 		fmt.Println("----------------------------------")
 		currentImplName = i.GetName()
@@ -226,6 +232,7 @@ func main() {
 			panic(err3)
 		}
 		// finalzie the implements instruction into a regular struct
+		// it becomes regular go code.
 		i.SetTokenValue(glanglexer.ImplementsToken, "struct")
 		i.RemoveT(glanglexer.TplOpenToken) // get ride of the template mutations
 		if len(implTplResults[currentImplName]) > 0 {
