@@ -95,8 +95,6 @@ func (g *Lexer) StartHere(l *lexer.L) lexer.StateFunc {
 	return g.process
 }
 
-var o = 0
-
 // StartHere ...
 func (g *Lexer) process(l *lexer.L) lexer.StateFunc {
 	r := l.Next()
