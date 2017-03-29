@@ -9,7 +9,7 @@ type Todo struct {
   Done bool
 }
 
-type Todos implements<Mutexed (Slice .Todo)> {
+type Todos implements<Mutexed (Slice .Todo "Name")> {
   // it reads as a mutexed list of todo.
 }
 
@@ -29,6 +29,15 @@ template Mutexed<.Name> struct {
 
 template <.Name>Slice struct {
   items []<.Name>
+}
+
+<range $a := .Args> func (m <$.Name>Slice) FindBy<$a>(<$a> <.ArgType $a>) (<.Name>,bool) {
+  for i, items := range s.items {
+    if item.<$a> == <$a> {
+      return item, true
+    }
+  }
+  return {}<$.Name>, false
 }
 
 func (s <.Name>Slice) Push(item <.Name>) int {

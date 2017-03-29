@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"text/template"
 
 	genericinterperter "github.com/mh-cbon/gigo/interpreter/generic"
@@ -147,6 +148,7 @@ func main() {
 	// template XXXX struct{}
 	// func(of the template)...
 	// create a template.Template of its string
+
 	for _, i := range tplTypes {
 		// create a template.Template of the content of the template type.
 		tplName := fmt.Sprintf("%v%v", "tplType", i.GetSlugName())
@@ -175,11 +177,12 @@ func main() {
 		// implement decl => type XXX implements<Mutator()>
 		// Mutator is a func(struct)struct
 		name := i.GetSlugName()
-		implTplFuncs[name] = func(origin *glang.StructDecl) (*glang.StructDecl, error) {
+		implTplFuncs[name] = func(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
 			// the provided argument becomes the template root dot {{.}}
 			tpl := tplTypesTpl["tplType"+name]
 			var buf bytes.Buffer
-			err2 := tpl.Execute(&buf, origin)
+			data := &TemplateTplDot{StructDecl: origin, Args: args}
+			err2 := tpl.Execute(&buf, data)
 			if err2 == nil {
 				// we shall parse it
 				pkgName := pkgDecl.GetName()
@@ -207,30 +210,33 @@ func main() {
 
 				return newStruct, nil
 			}
-			return origin, err
+			return origin, err2
 		}
 	}
+
 	for _, i := range structTypes {
 		// declare regular structs as data protperties
 		implTplData[i.GetName()] = i
 	}
+
 	for _, i := range implTypes {
 		// foreach implements<...> declaration,
 		// create a template of the identifier <...>, where
 		// functions are type mutators(originStructType),
 		// and data are the regular structs within the package
-		fmt.Println("----------------------------------")
-		fmt.Println("----------------------------------")
 		currentImplName = i.GetName()
 		tplContent := i.ImplementTemplate.String()
 		t, err2 := template.New("gigo").Funcs(implTplFuncs).Delims("<:", ":>").Parse(tplContent)
 		if err2 != nil {
+			fmt.Println(tplContent)
 			panic(err2)
 		}
 		err3 := t.Execute(ioutil.Discard, implTplData)
 		if err3 != nil {
+			fmt.Println(tplContent)
 			panic(err3)
 		}
+
 		// finalzie the implements instruction into a regular struct
 		// it becomes regular go code.
 		i.SetTokenValue(glanglexer.ImplementsToken, "struct")
@@ -252,8 +258,6 @@ func main() {
 		currentImplName = ""
 	}
 
-	// fmt.Println((fileDef.String()))
-
 	tplContent := fileDef.String()
 	// executee the file content.
 	data := &Tomate{
@@ -271,16 +275,8 @@ func main() {
 	if err3 != nil {
 		panic(err3)
 	}
-	// fmt.Println(funcs[100])
-
+	// fmt.Println((fileDef.String()))
 	// genericinterperter.Dump(fileDef, 0)
-	// // fmt.Println(fileDef.Dump()[:])
-	// fmt.Println(len(fileDef.String()))
-	// // fmt.Println(len(fileDef.String()[:950]))
-	// fmt.Println(len(fileDef.Defs))
-	// fmt.Println(len(fileDef.Tokens.Tokens))
-	// fmt.Println(fileDef.Dump())
-	// fmt.Println(fileDef.Defs[0].String()[:20])
 
 }
 
@@ -288,6 +284,15 @@ type Tomate struct {
 	placeholders   map[string]*glang.ImplementDecl
 	implTypes      []*glang.ImplementDecl
 	implTplResults map[string][]*glang.StructDecl
+}
+
+type TemplateTplDot struct {
+	*glang.StructDecl
+	Args []interface{}
+}
+
+func (t *TemplateTplDot) ArgType(s interface{}) string {
+	return reflect.TypeOf(s).Name()
 }
 
 func (t *Tomate) GetResult(pl string) string {
