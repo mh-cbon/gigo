@@ -112,10 +112,16 @@ func main() {
 		attachImplMethod(i)
 	}
 
-	/* At that moment the file is processed,
-	all the template/type/struct/interface/func/ect declarations
-	are well known.
+	/* At that moment the file tree is modified with
+	implements<> replaced with placeholders
+	template<> are removed for further processing
+	<define> are removed for further processing
+	<range> are removed for further processing
+	- the regular struct of the file are gathered.
+	- the method have been dispathed to their respective types
 	*/
+
+	// prepare templates and their func for rendering.
 
 	tplTypesTpl := map[string]*template.Template{}
 	tplTypesFuncs := map[string]interface{}{}
