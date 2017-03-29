@@ -139,6 +139,13 @@ func main() {
 																			- it defines regular struct into data member
 	*/
 
+	// for every declarations
+	// - <define> func xx(){}
+	// do
+	//- define a template func
+	// that func (tbd later) will be available in type declarations expressions like
+	// - implement<>
+	// - template<>
 	for _, i := range defFuncs {
 		name := i.GetName()
 		content := i.String()
@@ -147,23 +154,32 @@ func main() {
 			fmt.Println(content)
 			return nil
 		}
+		// the key difficulty in this feature is that the func string can not be
+		// evaluated at runtime, so this whole template transforms step,
+		// needs to be delayed to a new sub go program where the func body string can be written.
+		// just refactroring of the current mess!
 	}
 
-	currentImplName := "" // the current implement being resolved in the origin file
-	//for every
-	// template XXXX struct{}
-	// func(of the template)...
-	// create a template.Template of its string
+	currentImplName := "" // the current implement declaration being resolved in the origin file
 
+	// for every declarations
+	// - template XXXX struct{}
+	// - func(of the template)...
+	// do
+	//- create a template.Template of its string
+	//- create a template.Func of its mutation
 	for _, i := range tplTypes {
 		// create a template.Template of the content of the template type.
+		// => template type decl
+		// + template methods decl
 		tplName := fmt.Sprintf("%v%v", "tplType", i.GetSlugName())
 		tplContent := ""
 		// the template declares a type like this
 		// template XXXX struct{}
 		// it is needed to replace the template keyword by a type.
+		// => type XXXX struct{}
 		if y := i.GetToken(glanglexer.TemplateToken); y != nil {
-			// y.SetType(glanglexer.TypeToken)
+			// y.SetType(glanglexer.TypeToken) // not needed to update
 			y.SetValue("type")
 		}
 		tplContent += i.String()
@@ -200,8 +216,8 @@ func main() {
 				newFileDef.Remove(pkgD)
 				newStruct := newFileDef.FindStructsTypes()[0] // a type for a type
 				// should it be added to the current template data ?
-				// note, it is expected the type gets added to the package repository.
 				// structTypes = append(structTypes, newStruct)
+				// note, it is expected the type gets added to the package repository.
 
 				// dont forget to attach its method.
 				for _, f := range newFileDef.FindFuncs() {
@@ -265,7 +281,10 @@ func main() {
 	}
 
 	tplContent := fileDef.String()
-	// executee the file content.
+	// execute the modified file tree with a taylor made template context.
+
+	// set . to a structure which is able to resolve a placeholder,
+	// a placeholder => {{.GetResult placeholderID }}
 	data := &Tomate{
 		placeholders:   placeholders,
 		implTypes:      implTypes,
@@ -292,15 +311,6 @@ type Tomate struct {
 	implTplResults map[string][]*glang.StructDecl
 }
 
-type TemplateTplDot struct {
-	*glang.StructDecl
-	Args []interface{}
-}
-
-func (t *TemplateTplDot) ArgType(s interface{}) string {
-	return reflect.TypeOf(s).Name()
-}
-
 func (t *Tomate) GetResult(pl string) string {
 	if impl, ok := t.placeholders[pl]; ok {
 		for _, i := range t.implTypes {
@@ -317,6 +327,15 @@ func (t *Tomate) GetResult(pl string) string {
 		}
 	}
 	return "not found"
+}
+
+type TemplateTplDot struct {
+	*glang.StructDecl
+	Args []interface{}
+}
+
+func (t *TemplateTplDot) ArgType(s interface{}) string {
+	return reflect.TypeOf(s).Name()
 }
 
 func InterpretReader(name string, r io.Reader) (*glang.FileDecl, error) {
