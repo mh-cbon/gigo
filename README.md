@@ -1,6 +1,6 @@
 # gigo
 
-go genrate on steroids, in inpu it takes
+go generate on steroids, in input it takes
 
 ```go
 
