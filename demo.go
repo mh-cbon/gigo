@@ -1,44 +1,3 @@
-
-
-type <:.Name:>Slice struct {
-  items []<:.Name:>
-}
-
-<:range $a := .Args:> func (m <:$.Name:>Slice) FindBy<:$a:>(<:$a:> <:.ArgType $a:>) (<:.Name:>,bool) {
-  for i, items := range s.items {
-    if item.<$a> == <$a> {
-      return item, true
-    }
-  }
-  return {}<$.Name>, false
-}<:end:>
-
-func (s <:.Name:>Slice) Push(item <:.Name:>) int {
-  s.items = append(s.items, item)
-  return len(s.items)
-}
-
-func (s <:.Name:>Slice) Index(item <:.Name:>) int {
-  for i, items := range s.items {
-    if item == search {
-      return i
-    }
-  }
-  return -1
-}
-
-func (s <:.Name:>Slice) RemoveAt(i index) int {
-	s.items = append(s.items[:i], s.items[i+1:]...)
-}
-
-func (s <:.Name:>Slice) Remove(item <:.Name:>) int {
-  if i:= s.Index(item); i > -1 {
-    s.RemoveAt(i)
-    return i
-  }
-  return -1
-}
-<nil>
 package main
 
 // Let s say we provide an api to manage TODOS
@@ -109,17 +68,87 @@ func (t todoList) Push(t todo) {
 // - Apply it Slice capability to provide methods such Push/Index/Remove ect
 // - Ensure it exposes a public API which is totally thread safe
 
+type TodoSlice struct {
+  items []Todo
+}
+
+
+ func (m TodoSlice) FindByName(Name string) (Todo,bool) {
+  for i, items := range s.items {
+    if item.<$a> == <$a> {
+      return item, true
+    }
+  }
+  return {}<$.Name>, false
+}
+
+
+func (s TodoSlice) Push(item Todo) int {
+  s.items = append(s.items, item)
+  return len(s.items)
+}
+
+
+func (s TodoSlice) Index(item Todo) int {
+  for i, items := range s.items {
+    if item == search {
+      return i
+    }
+  }
+  return -1
+}
+
+
+func (s TodoSlice) RemoveAt(i index) int {
+	s.items = append(s.items[:i], s.items[i+1:]...)
+}
+
+
+func (s TodoSlice) Remove(item Todo) int {
+  if i:= s.Index(item); i > -1 {
+    s.RemoveAt(i)
+    return i
+  }
+  return -1
+}
 // while this is compatible with its local contracts,
 // it will work and still takes advantages of concrete types exported by consumed package.
 
-type MutexedTodo struct {
+type MutexedTodoSlice struct {
   lock *sync.Mutex
-  embed Todo
+  embed TodoSlice
+}
+
+
+ func (m MutexedTodoSlice)  FindByName((Name string))  (Todo,bool) {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<$m.GetName>(<$m.Args>)
+}
+ func (m MutexedTodoSlice)  Push((item Todo))  int {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<$m.GetName>(<$m.Args>)
+}
+ func (m MutexedTodoSlice)  Index((item Todo))  int {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<$m.GetName>(<$m.Args>)
+}
+ func (m MutexedTodoSlice)  RemoveAt((i index))  int {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<$m.GetName>(<$m.Args>)
+}
+ func (m MutexedTodoSlice)  Remove((item Todo))  int {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<$m.GetName>(<$m.Args>)
 }
 
 
 type Todos struct {
-	MutexedTodo
+	MutexedTodoSlice
   // it reads as a mutexed list of todo.
 }
 

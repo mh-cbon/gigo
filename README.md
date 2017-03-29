@@ -31,7 +31,7 @@ template <.Name>Slice struct {
   items []<.Name>
 }
 
-<range $a := .Args> func (m <$.Name>Slice) FindBy<$a>(<$a> <.ArgType $a>) (<.Name>,bool) {
+<range $a := .Args> func (m <$.Name>Slice) FindBy<$a>(<$a> <$.ArgType $a>) (<$.Name>,bool) {
   for i, items := range s.items {
     if item.<$a> == <$a> {
       return item, true
@@ -86,6 +86,14 @@ func (s TodoSlice) Push(item Todo) int {
   s.items = append(s.items, item)
   return len(s.items)
 }
+ func (m TodoSlice) FindByName(Name string) (Todo,bool) {
+  for i, items := range s.items {
+    if item.<$a> == <$a> {
+      return item, true
+    }
+  }
+  return {}<$.Name>, false
+}
 
 
 func (s TodoSlice) Index(item Todo) int {
@@ -119,6 +127,11 @@ type MutexedTodoSlice struct {
 }
 
 
+ func (m MutexedTodoSlice)  FindByName((Name string))  (Todo,bool) {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<$m.GetName>(<$m.Args>)
+}
  func (m MutexedTodoSlice)  Push((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
