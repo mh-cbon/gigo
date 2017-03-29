@@ -1,8 +1,6 @@
 package generic
 
 import (
-	"time"
-
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
 	lexer "github.com/mh-cbon/state-lexer"
 )
@@ -153,7 +151,6 @@ func (I *Interpreter) ReadBlock(open lexer.TokenType, close lexer.TokenType) []T
 
 	count := 1
 	for {
-		<-time.After(time.Millisecond)
 		if openTok := I.Read(open); openTok != nil {
 			count++
 

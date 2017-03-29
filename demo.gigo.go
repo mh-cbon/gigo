@@ -139,11 +139,7 @@ func (c Consumer) RmTodo(t Todo) error {
 // Boom! Thats it,
 // the code base redudancy is reduced,
 // the programmer fixed a tricky problem
-// in a glance, yet the code is open to modification.
-// More than that, the template does not even needs to be shared accross packages
-// A consumer might declare its own template which would feet its need,
-// while this is compatible with its local contracts,
-// it will work and still takes advantages of concrete types exported by consumed package.
+// in a glance!
 
 template Mutexed<.Name> struct {
   lock *sync.Mutex
