@@ -2,27 +2,76 @@ package generic
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
 
-func DebugSynxtaxError(src string, line, pos int, reason string, got string, wanted ...string) error {
-	lines := []string{}
-	toRead := 8
-	readFileByLine(src, keepLines(line-toRead, line+toRead, func(line string) {
-		lines = append(lines, line)
-	}))
-	before := lines[:toRead-2]
-	about := lines[toRead-2]
-	after := lines[toRead-1:]
-	str := fmt.Sprintln(reason)
-	str += fmt.Sprintf("In file=%v At=%v:%v\n", src, line, pos)
-	str += fmt.Sprintf("Found=%v wanted=%v\n", got, wanted)
+// SyntaxError is a syntax error
+type SyntaxError struct {
+	reason      string
+	wantedTypes []string
+	gotType     string
+	line        int
+	pos         int
+}
+
+func (f *SyntaxError) Error() string {
+	return fmt.Sprintf(
+		"%v at line %v:%v (wanted=%v, got=%v)",
+		f.reason,
+		f.line,
+		f.pos,
+		f.wantedTypes,
+		f.gotType,
+	)
+}
+
+func (f *SyntaxError) String() string { return f.Error() }
+
+// Format implements fmt.Formatter
+func (f *SyntaxError) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('+') {
+			io.WriteString(s, f.reason)
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(s, f.reason)
+	case 'q':
+		fmt.Fprintf(s, "%q", f.reason)
+	}
+}
+
+// PrettyPrint a syntax error
+func (f *SyntaxError) PrettyPrint(name string, lines []string) string {
+	line := f.line
+	pos := f.pos
+
+	str := fmt.Sprintln(f.reason)
+	str += fmt.Sprintf("In file=%v At=%v:%v\n", name, line, pos)
+	str += fmt.Sprintf("Found=%v wanted=%v\n", f.gotType, f.wantedTypes)
+
+	before := []string{}
+	about := ""
+	after := []string{}
+	toRead := len(lines) / 2
+	if toRead > 2 {
+		before = lines[:toRead-3]
+		about = lines[toRead-1]
+		after = lines[toRead:]
+	} else {
+		before = lines[:toRead]
+		about = lines[toRead+1]
+		after = lines[toRead+2:]
+	}
+
 	str += fmt.Sprintln("")
 	str += fmt.Sprintln("...")
-	line -= toRead - 1
+	line -= toRead - 2 //weird :x
 	for _, l := range before {
 		line++
 		str += fmt.Sprintf("%000d", line)
@@ -38,8 +87,97 @@ func DebugSynxtaxError(src string, line, pos int, reason string, got string, wan
 		str += fmt.Sprint("  ", l)
 	}
 	str += fmt.Sprintln("...")
-	return errors.New(str)
+	return str
 }
+
+// StringSyntaxError is a syntax error in the scope of a Str
+type StringSyntaxError struct {
+	Filepath string
+	Src      string
+	SyntaxError
+}
+
+// Format implements fmt.Formatter
+func (f *StringSyntaxError) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('#') {
+			io.WriteString(s, f.PrettyPrint())
+			return
+		}
+	}
+	f.SyntaxError.Format(s, verb)
+}
+
+// PrettyPrint a syntax error
+func (f *StringSyntaxError) PrettyPrint() string {
+	lines := strings.Split(f.Src, "\n")
+	for i := range lines {
+		lines[i] += "\n"
+	}
+	return f.SyntaxError.PrettyPrint(f.Filepath, lines)
+}
+
+func (f *StringSyntaxError) Error() string {
+	return fmt.Sprintf(
+		"in %v %v at line %v:%v (wanted=%v, got=%v)",
+		f.Filepath,
+		f.reason,
+		f.line,
+		f.pos,
+		f.wantedTypes,
+		f.gotType,
+	)
+}
+
+func (f *StringSyntaxError) String() string { return f.Error() }
+
+// FileSyntaxError is a syntax error in the scope of a File
+type FileSyntaxError struct {
+	SyntaxError
+	Src string
+}
+
+// Format implements fmt.Formatter
+func (f *FileSyntaxError) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if s.Flag('#') {
+			io.WriteString(s, f.PrettyPrint())
+			return
+		}
+	}
+	f.SyntaxError.Format(s, verb)
+}
+
+// PrettyPrint a syntax error
+func (f *FileSyntaxError) PrettyPrint() string {
+	lines := []string{}
+	line := f.line
+	from := line - 8
+	to := line + 8
+	if from < 0 {
+		from = 0
+	}
+	readFileByLine(f.Src, keepLines(from, to, func(line string) {
+		lines = append(lines, line)
+	}))
+	return f.SyntaxError.PrettyPrint(f.Src, lines)
+}
+
+func (f *FileSyntaxError) Error() string {
+	return fmt.Sprintf(
+		"in %v %v at line %v:%v (wanted=%v, got=%v)",
+		f.Src,
+		f.reason,
+		f.line,
+		f.pos,
+		f.wantedTypes,
+		f.gotType,
+	)
+}
+
+func (f *FileSyntaxError) String() string { return f.Error() }
 
 func keepLines(from, to int, h func(line string)) func(line string) {
 	c := 0

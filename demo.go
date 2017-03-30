@@ -35,7 +35,7 @@ func (t todoList) push(t todo) {
   // get a deadlock becasue you tried to lock an already locked mutex.
   // to avoid that, carefully make use of other nonTS methods
   /// ... code
-  if {
+  if true {
 
   }
 }
@@ -111,8 +111,8 @@ func (s TodoSlice) Remove(item Todo) int {
   }
   return -1
 }
-// while this is compatible with its local contracts,
-// it will work and still takes advantages of concrete types exported by consumed package.
+// the programmer fixed a tricky problem
+// in a glance!
 
 type MutexedTodoSlice struct {
   lock *sync.Mutex
@@ -214,6 +214,51 @@ func (c Consumer) RmTodo(t Todo) error {
   }
   return nil
 }
+
+// Wait, go can go generate, why is this any better ?
+/*
+This is very similar to go generate, but, go generate has few problems
+- go generate can do anything, it also means it is not generic enough to provide a dsl-like
+- go generate does not intervein in the static analysis phase, it works before that => no completion, no analysis, just generate
+- its not fun to use you need to take care of various little things (out location, go gen command, and as of today, write the generator)
+
+implements type templater is no more than a templater,
+but it is exactly what s needed to improve programming experience of go,
+it does not hurt the go type system
+it helps to factorize and produce better code with less bug
+*/
+
+
+// other ideas
+
+// trait ?
+
+// type Formatter interface{
+//   Format(f State, c rune)
+// }
+
+/*
+template Dumper trait {
+}
+func (s Dumper) Format(f State, c rune)  {
+  <range $p := $.Props>
+    <.Name>
+  <end>
+  io.WriteString(os.Stdout, "build a pretty printed string of s")
+}
+
+type PrettyTodos implements<Dumper .Todo>
+
+type MyType implements<Mutexed (Slice .PrettyTodos "Name")> {
+}
+*/
+
+/*
+// define a template func
+<define> func nameInTemplate(a astThing, w out, args ...string)error {
+
+}
+*/
 
 // define new keywords
 // - to open a resource

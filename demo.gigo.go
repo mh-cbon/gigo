@@ -35,7 +35,7 @@ func (t todoList) push(t todo) {
   // get a deadlock becasue you tried to lock an already locked mutex.
   // to avoid that, carefully make use of other nonTS methods
   /// ... code
-  if {
+  if true {
 
   }
 }
@@ -207,10 +207,34 @@ it helps to factorize and produce better code with less bug
 
 // other ideas
 
+// trait ?
+
+// type Formatter interface{
+//   Format(f State, c rune)
+// }
+
+/*
+template Dumper trait {
+}
+func (s Dumper) Format(f State, c rune)  {
+  <range $p := $.Props>
+    <.Name>
+  <end>
+  io.WriteString(os.Stdout, "build a pretty printed string of s")
+}
+
+type PrettyTodos implements<Dumper .Todo>
+
+type MyType implements<Mutexed (Slice .PrettyTodos "Name")> {
+}
+*/
+
+/*
 // define a template func
 <define> func nameInTemplate(a astThing, w out, args ...string)error {
 
 }
+*/
 
 // define new keywords
 // - to open a resource

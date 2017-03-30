@@ -41,3 +41,14 @@ func Dump(src Expressioner, lvl int) {
 	}
 	fmt.Printf("%v%-6v %-20T tokens(%v)\n", x, "end", src, len(src.GetExprs()))
 }
+
+func DumpTokens(tokens []Tokener, lvl int) {
+	x := strings.Repeat(" ", lvl)
+	fmt.Printf("%v%-6v %-20T tokens(%v)\n", x, "begin", "<noname>", len(tokens))
+	for _, tok := range tokens {
+		fmt.Printf("%40v %v %20v %q\n", x, tok.GetPos().String(),
+			glanglexer.TokenType(tok.GetType()),
+			tok.GetValue())
+	}
+	fmt.Printf("%v%-6v %-20T tokens(%v)\n", x, "end", "<noname>", len(tokens))
+}

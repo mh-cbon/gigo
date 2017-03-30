@@ -166,3 +166,25 @@ func (t *Todos) Hello(){fmt.Println("Hello")}
 ```
 
 Still some work to be done, but you got the idea!
+
+## Changes
+
+#### Added nice error support
+
+```go
+package tomate
+
+type tomate struct qsdqd{} // bad
+```
+
+```sh
+unexpected token
+In file=<noname> At=3:19
+Found=wordToken wanted=[bracketOpenToken]
+
+...
+5  package tomate
+6  type tomate struct qsdqd{}
+   ---------------------↑
+...
+```

@@ -77,14 +77,24 @@ func (I *Interpreter) PeekOne() Tokener {
 	I.Rewind()
 	return t
 }
-
-func (I *Interpreter) MustRead(T lexer.TokenType) Tokener {
-	t := I.Read(T)
-	if t == nil {
-		panic(I.Debug("Token is unexpected: ", T))
+func (I *Interpreter) PeekN(n int) []Tokener {
+	var ret []Tokener
+	for i := 0; i < n; i++ {
+		ret = append(ret, I.Next())
 	}
-	return t
+	for i := 0; i < n; i++ {
+		I.Rewind()
+	}
+	return ret
 }
+
+// func (I *Interpreter) MustRead(T lexer.TokenType) Tokener {
+// 	t := I.Read(T)
+// 	if t == nil {
+// 		panic(I.Debug("Token is unexpected: ", T))
+// 	}
+// 	return t
+// }
 
 func (I *Interpreter) Peek(T lexer.TokenType) Tokener {
 	t := I.Next()
@@ -173,15 +183,19 @@ func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error
 	for _, w := range wantedTypes {
 		wanted = append(wanted, glanglexer.TokenType(w))
 	}
-	n := I.Next()
+	n := I.Last()
 	if n == nil {
+		n = I.Next()
+		I.Rewind()
+	} else if n == nil {
+		// tbd adjust the position
 		n = NewTokenEOF()
 	}
-	Pos := n.(*TokenWithPos).Pos
-	return DebugSynxtaxError(I.Scope.GetName(),
-		Pos.Line, Pos.Pos,
-		reason,
-		glanglexer.TokenType(n.GetType()),
-		wanted...,
-	)
+	return I.Scope.FinalizeErr(&SyntaxError{
+		reason:      reason,
+		wantedTypes: wanted,
+		gotType:     glanglexer.TokenType(n.GetType()),
+		line:        n.GetPos().Line,
+		pos:         n.GetPos().Pos,
+	})
 }

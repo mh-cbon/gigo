@@ -8,22 +8,20 @@ import (
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
 )
 
-type FileDecl struct {
+type ScopeDecl struct {
 	genericinterperter.Expression
-	Name string
 }
 
-func (f *FileDecl) FindPackageDecl() *PackageDecl {
-	var ret *PackageDecl
+func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
+	var ret []*PackageDecl
 	for _, t := range f.Filter(glanglexer.PackageToken) {
 		if x, ok := t.(*PackageDecl); ok {
-			ret = x
-			break
+			ret = append(ret, x)
 		}
 	}
 	return ret
 }
-func (f *FileDecl) FindImplementsTypes() []*ImplementDecl {
+func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 	var ret []*ImplementDecl
 	for _, t := range f.Filter(glanglexer.ImplementsToken) {
 		if x, ok := t.(*ImplementDecl); ok {
@@ -32,7 +30,7 @@ func (f *FileDecl) FindImplementsTypes() []*ImplementDecl {
 	}
 	return ret
 }
-func (f *FileDecl) FindStructsTypes() []*StructDecl {
+func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 	var ret []*StructDecl
 	for _, t := range f.Filter(glanglexer.StructToken) {
 		if x, ok := t.(*StructDecl); ok {
@@ -41,7 +39,7 @@ func (f *FileDecl) FindStructsTypes() []*StructDecl {
 	}
 	return ret
 }
-func (f *FileDecl) FindTemplatesTypes() []*TemplateDecl {
+func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 	var ret []*TemplateDecl
 	for _, t := range f.Filter(glanglexer.TemplateToken) {
 		if x, ok := t.(*TemplateDecl); ok {
@@ -50,7 +48,16 @@ func (f *FileDecl) FindTemplatesTypes() []*TemplateDecl {
 	}
 	return ret
 }
-func (f *FileDecl) FindFuncs() []*FuncDecl {
+func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
+	var ret []*InterfaceDecl
+	for _, t := range f.Filter(glanglexer.InterfaceToken) {
+		if x, ok := t.(*InterfaceDecl); ok {
+			ret = append(ret, x)
+		}
+	}
+	return ret
+}
+func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 	var ret []*FuncDecl
 	for _, t := range f.Filter(glanglexer.FuncToken) {
 		if x, ok := t.(*FuncDecl); ok && x.IsTemplated() == false {
@@ -59,7 +66,7 @@ func (f *FileDecl) FindFuncs() []*FuncDecl {
 	}
 	return ret
 }
-func (f *FileDecl) FindTemplateFuncs() []FuncDeclarer {
+func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 	var ret []FuncDeclarer
 	for _, t := range f.Filter(glanglexer.TplOpenToken) {
 		if x, ok := t.(*TemplateFuncDecl); ok && x.IsDefine() == false {
@@ -73,7 +80,7 @@ func (f *FileDecl) FindTemplateFuncs() []FuncDeclarer {
 	}
 	return ret
 }
-func (f *FileDecl) FindDefineFuncs() []*TemplateFuncDecl {
+func (f *ScopeDecl) FindDefineFuncs() []*TemplateFuncDecl {
 	var ret []*TemplateFuncDecl
 	for _, t := range f.Filter(glanglexer.TplOpenToken) {
 		if x, ok := t.(*TemplateFuncDecl); ok && x.IsDefine() {
@@ -81,6 +88,28 @@ func (f *FileDecl) FindDefineFuncs() []*TemplateFuncDecl {
 		}
 	}
 	return ret
+}
+
+type StrDecl struct {
+	ScopeDecl
+	Src string
+}
+
+func (f *StrDecl) FinalizeErr(err *genericinterperter.SyntaxError) error {
+	return &genericinterperter.StringSyntaxError{Src: f.Src, Filepath: "<noname>", SyntaxError: *err}
+}
+
+func (p *StrDecl) GetName() string {
+	return "noname"
+}
+
+type FileDecl struct {
+	ScopeDecl
+	Name string
+}
+
+func (f *FileDecl) FinalizeErr(err *genericinterperter.SyntaxError) error {
+	return &genericinterperter.FileSyntaxError{Src: f.GetName(), SyntaxError: *err}
 }
 
 func (p *FileDecl) GetName() string {
@@ -133,6 +162,7 @@ type StructDecl struct {
 	genericinterperter.Expression
 	Name    *IdentifierDecl
 	Methods []FuncDeclarer
+	Block   *PropsBlockDecl
 }
 
 func (p *StructDecl) String() string {
@@ -151,7 +181,11 @@ func NewStructDecl(t genericinterperter.Tokener) *StructDecl {
 }
 
 type TemplateDecl struct {
-	StructDecl
+	genericinterperter.Tokener
+	genericinterperter.Expression
+	Name    *IdentifierDecl
+	Methods []FuncDeclarer
+	Block   *PropsBlockDecl
 }
 
 func (t *TemplateDecl) SetDelims(l, r string) {
@@ -169,17 +203,27 @@ func (t *TemplateDecl) Template() string {
 	}
 	return ret
 }
+func (t *TemplateDecl) String() string {
+	return t.Expression.String()
+}
+func (t *TemplateDecl) GetName() string {
+	return t.Name.String()
+}
+func (t *TemplateDecl) AddMethod(f FuncDeclarer) {
+	t.Methods = append(t.Methods, f)
+}
 
 func NewTemplateDecl(t genericinterperter.Tokener) *TemplateDecl {
 	return &TemplateDecl{
-		StructDecl: *NewStructDecl(t),
+		Tokener: t,
 	}
 }
 
 type InterfaceDecl struct {
 	genericinterperter.Tokener
 	genericinterperter.Expression
-	Name *IdentifierDecl
+	Name  *IdentifierDecl
+	Block *SignsBlockDecl
 }
 
 func (p *InterfaceDecl) String() string {
@@ -264,6 +308,9 @@ func (t *TemplateFuncDecl) IsTemplated() bool {
 func (t *TemplateFuncDecl) GetModifier() *BodyBlockDecl {
 	return t.Modifier
 }
+func (t *TemplateFuncDecl) GetReceiver() *PropsBlockDecl {
+	return t.Func.GetReceiver()
+}
 
 type FuncDeclarer interface {
 	genericinterperter.Expressioner
@@ -272,6 +319,7 @@ type FuncDeclarer interface {
 	GetName() string
 	// GetSlugName() string
 	GetReceiverType() *IdentifierDecl
+	GetReceiver() *PropsBlockDecl
 	String() string
 	GetModifier() *BodyBlockDecl
 }
@@ -286,6 +334,9 @@ type FuncDecl struct {
 	Body     *BodyBlockDecl
 }
 
+func (p *FuncDecl) GetReceiver() *PropsBlockDecl {
+	return p.Receiver
+}
 func (p *FuncDecl) GetReceiverType() *IdentifierDecl {
 	return p.Receiver.Props[0].Type
 }

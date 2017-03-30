@@ -24,6 +24,7 @@ func main() {
 	fileName := "demo.gigo.go"
 	fileDef, err := InterpretFile(fileName)
 	if err != nil {
+		fmt.Printf("%#v\n", err)
 		panic(err)
 	}
 
@@ -35,7 +36,8 @@ func main() {
 	// prepare the source for its rendering
 
 	var defineFunc []glang.FuncDeclarer
-	pkgDecl := fileDef.FindPackageDecl()
+	pkgsDecl := fileDef.FindPackagesDecl()
+	pkgDecl := pkgsDecl[0]
 	structTypes := fileDef.FindStructsTypes()
 	implTypes := fileDef.FindImplementsTypes()
 	tplTypes := fileDef.FindTemplatesTypes()
@@ -210,9 +212,11 @@ func main() {
 				pkgName := pkgDecl.GetName()
 				newFileDef, err3 := InterpretString(pkgName, buf.String())
 				if err3 != nil {
+					fmt.Printf("%#v\n", err3)
 					panic(err3)
 				}
-				pkgD := newFileDef.FindPackageDecl()
+				pkgsD := newFileDef.FindPackagesDecl()
+				pkgD := pkgsD[0]
 				newFileDef.Remove(pkgD)
 				newStruct := newFileDef.FindStructsTypes()[0] // a type for a type
 				// should it be added to the current template data ?
@@ -338,20 +342,20 @@ func (t *TemplateTplDot) ArgType(s interface{}) string {
 	return reflect.TypeOf(s).Name()
 }
 
-func InterpretReader(name string, r io.Reader) (*glang.FileDecl, error) {
+func makeLexerReader(r io.Reader) func() genericinterperter.Tokener {
 
 	l := lexer.New(r, (gigolexer.New()).StartHere)
 	l.ErrorHandler = func(e string) {}
 
-	// namer := genericinterperter.TokenerName(gigolexer.TokenName)
+	return genericinterperter.PositionnedTokenReader(l.NextToken)
+}
 
-	reader := genericinterperter.PositionnedTokenReader(l.NextToken)
-	// reader = genericinterperter.PrettyPrint(reader, namer)
+func prettyPrinterLexer(reader func() genericinterperter.Tokener) func() genericinterperter.Tokener {
 
-	interpret := glanginterpreter.NewGigoInterpreter()
-	fileDef := interpret.ProcessFile(name, reader)
+	namer := genericinterperter.TokenerName(gigolexer.TokenName)
+	reader = genericinterperter.PrettyPrint(reader, namer)
 
-	return fileDef, nil
+	return reader
 }
 
 func InterpretFile(fileName string) (*glang.FileDecl, error) {
@@ -360,16 +364,24 @@ func InterpretFile(fileName string) (*glang.FileDecl, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return InterpretReader(fileName, f)
+	reader := makeLexerReader(f)
+	// reader = prettyPrinterLexer(reader)
+
+	interpret := glanginterpreter.NewGigoInterpreter()
+	return interpret.ProcessFile(fileName, reader)
 }
 
-func InterpretString(pkgName, content string) (*glang.FileDecl, error) {
+func InterpretString(pkgName, content string) (*glang.StrDecl, error) {
 
 	content = fmt.Sprintf("package %v\n\n%v", pkgName, content)
 
 	var buf bytes.Buffer
 	buf.WriteString(content)
-	return InterpretReader("random", &buf)
+	reader := makeLexerReader(&buf)
+	//reader = prettyPrinterLexer(reader)
+
+	interpret := glanginterpreter.NewGigoInterpreter()
+	return interpret.ProcessStr(content, reader)
 }
 
 var plToken lexer.TokenType = -200

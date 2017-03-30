@@ -14,6 +14,7 @@ type ExprReceiver interface {
 type ScopeReceiver interface {
 	ExprReceiver
 	GetName() string
+	FinalizeErr(*SyntaxError) error
 }
 
 type TokenPos struct {
@@ -238,15 +239,31 @@ func (f *Expression) GetExprs() []Expressioner {
 	return ret
 }
 func (f *Expression) AddExpr(expr Tokener) {
+	if expr == nil || expr == Tokener(nil) {
+		panic("rrr")
+	}
 	f.Tokens = append(f.Tokens, expr)
 }
 func (f *Expression) AddExprs(exprs []Tokener) {
+	for _, expr := range exprs {
+		if expr == nil || expr == Tokener(nil) {
+			panic("rrr")
+		}
+	}
 	f.Tokens = append(f.Tokens, exprs...)
 }
 func (f *Expression) PrependExpr(expr Tokener) {
+	if expr == nil || expr == Tokener(nil) {
+		panic("rrr")
+	}
 	f.Tokens = append([]Tokener{expr}, f.Tokens...)
 }
 func (f *Expression) PrependExprs(exprs []Tokener) {
+	for _, expr := range exprs {
+		if expr == nil || expr == Tokener(nil) {
+			panic("rrr")
+		}
+	}
 	f.Tokens = append(exprs, f.Tokens...)
 }
 func (f *Expression) String() string {
