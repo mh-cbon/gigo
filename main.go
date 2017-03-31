@@ -121,7 +121,7 @@ func main() {
 		}
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
-		i.GetBody().SetTokenValue(glanglexer.GreaterToken, ":>")
+		i.GetBody().SetTokenValue(glanglexer.GreaterToken, ":>") // trick unti fix.
 		attachMethod(i)
 	}
 	// <define> func XXX ()
@@ -154,27 +154,6 @@ func main() {
 		// declare regular structs as data protperties
 		outData.implTplData[i.GetName()] = i
 	}
-
-	/* At that moment the file tree is modified with
-	implements<> replaced with placeholders
-	template<> are removed for further processing
-	<define> are removed for further processing
-	<range> are removed for further processing
-	- the regular struct of the file are gathered.
-	- the method have been dispathed to their respective types
-	*/
-
-	// prepare templates and their func for rendering.
-
-	/* The various elemnt of the source file
-	are now injected as template element.
-	<define> XXX		=> becomes a template.TemplateFunc
-	template XXX<Modifier> 	=> becomes a template where the content = struct+methods decl
-	<templat expr> func (receiver)(...) 	=> is associated to its type
-	type XXX implements<Mutator()> 	=> becomes a template of <Mutator()> only,
-																			- it defines template types as functions
-																			- it defines regular struct into data member
-	*/
 
 	// for every declarations
 	// - template XXXX struct{}
@@ -289,7 +268,7 @@ func InterpretFile(fileName string) (*glang.FileDecl, error) {
 
 func InterpretString(pkgName, content string) (*glang.StrDecl, error) {
 
-	content = fmt.Sprintf("package %v\n\n%v", pkgName, content)
+	// content = fmt.Sprintf("package %v\n\n%v", pkgName, content)
 
 	var buf bytes.Buffer
 	buf.WriteString(content)
