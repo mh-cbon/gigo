@@ -22,22 +22,20 @@ func main() {
 	// f := must open os.Open("demo.gigo")
 
 	fileName := "demo.gigo.go"
-	fileDef, err := InterpretFile(fileName)
-	if err != nil {
-		fmt.Printf("%#v\n", err)
-		panic(err)
+	fileDef := MustInterpretFile(fileName)
+
+	tplTypesFuncs := map[string]interface{}{}
+	outData := &Tomate{
+		implTplData: map[string]interface{}{},
 	}
 
 	/* At that moment the file is processed,
 	all the template/type/struct/interface/func/ect declarations
 	are well known.
 	*/
-
 	// prepare the source for its rendering
 
 	var defineFunc []glang.FuncDeclarer
-	pkgsDecl := fileDef.FindPackagesDecl()
-	pkgDecl := pkgsDecl[0]
 	structTypes := fileDef.FindStructsTypes()
 	implTypes := fileDef.FindImplementsTypes()
 	tplTypes := fileDef.FindTemplatesTypes()
@@ -66,14 +64,15 @@ func main() {
 		// panic("not found")
 		return false
 	}
-	placeholders := map[string]*glang.ImplementDecl{}
 
 	// type XXX implements{}, needs to be replaced by a placeholder,
 	// its template tokens values are changed to avoid further problems
 	for _, i := range implTypes {
-		plname, pl := placeholderToken(i)
-		placeholders[plname] = i
-		fileDef.InsertAfter(i, pl)
+		name := fmt.Sprintf("placeholder%v", len(outData.placeholders))
+		m := NewPlaceholderTypeMutation(name, i)
+		outData.placeholders = append(outData.placeholders, m)
+		fileDef.InsertAfter(i, m.PlaceholderDecl)
+		fileDef.Remove(i)
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
 	}
@@ -97,6 +96,7 @@ func main() {
 		}
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
+		i.GetBody().SetTokenValue(glanglexer.GreaterToken, ":>")
 		attachMethod(i)
 	}
 	// <define> func XXX ()
@@ -108,10 +108,26 @@ func main() {
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
 		defineFunc = append(defineFunc, i)
+
+		//- define a template func
+		// that func (tbd later) will be available in type declarations expressions like
+		// - implement<>
+		// - template<>
+		name := i.GetName()
+		tplTypesFuncs[name] = stubFunc(i.String())
+		// the key difficulty in this feature is that the func string can not be
+		// evaluated at runtime, so this whole template transforms step,
+		// needs to be delayed to a new sub go program where the func body string can be written.
+		// just refactroring of the current mess!
 	}
 	// regular go fund method are attached to ehir type.
 	for _, i := range funcs {
 		attachImplMethod(i)
+	}
+
+	for _, i := range structTypes {
+		// declare regular structs as data protperties
+		outData.implTplData[i.GetName()] = i
 	}
 
 	/* At that moment the file tree is modified with
@@ -125,12 +141,6 @@ func main() {
 
 	// prepare templates and their func for rendering.
 
-	tplTypesTpl := map[string]*template.Template{}
-	tplTypesFuncs := map[string]interface{}{}
-	implTplFuncs := map[string]interface{}{}
-	implTplData := map[string]interface{}{}
-	implTplResults := map[string][]*glang.StructDecl{}
-
 	/* The various elemnt of the source file
 	are now injected as template element.
 	<define> XXX		=> becomes a template.TemplateFunc
@@ -142,167 +152,38 @@ func main() {
 	*/
 
 	// for every declarations
-	// - <define> func xx(){}
-	// do
-	//- define a template func
-	// that func (tbd later) will be available in type declarations expressions like
-	// - implement<>
-	// - template<>
-	for _, i := range defFuncs {
-		name := i.GetName()
-		content := i.String()
-		tplTypesFuncs[name] = func() error {
-			fmt.Println("template func content is")
-			fmt.Println(content)
-			return nil
-		}
-		// the key difficulty in this feature is that the func string can not be
-		// evaluated at runtime, so this whole template transforms step,
-		// needs to be delayed to a new sub go program where the func body string can be written.
-		// just refactroring of the current mess!
-	}
-
-	currentImplName := "" // the current implement declaration being resolved in the origin file
-
-	// for every declarations
 	// - template XXXX struct{}
 	// - func(of the template)...
 	// do
 	//- create a template.Template of its string
 	//- create a template.Func of its mutation
 	for _, i := range tplTypes {
-		// create a template.Template of the content of the template type.
-		// => template type decl
-		// + template methods decl
-		tplName := fmt.Sprintf("%v%v", "tplType", i.GetSlugName())
-		tplContent := ""
-		// the template declares a type like this
-		// template XXXX struct{}
-		// it is needed to replace the template keyword by a type.
-		// => type XXXX struct{}
-		if y := i.GetToken(glanglexer.TemplateToken); y != nil {
-			// y.SetType(glanglexer.TypeToken) // not needed to update
-			y.SetValue("type")
-		}
-		tplContent += i.String()
-		for _, m := range i.Methods {
-			tplContent += m.String()
-			if m.GetModifier() != nil { // test if there is a front modifier like <range $m :=...>
-				tplContent += "<:end:>" // close the template expression, quick and dirty, but just works :)
-			}
-		}
-		t, err2 := template.New(tplName).Funcs(tplTypesFuncs).Delims("<:", ":>").Parse(tplContent)
-		if err2 != nil {
-			panic(err2)
-		}
-		tplTypesTpl[tplName] = t
-
-		// install the template type as a func for an implement declaration
-		// implement decl => type XXX implements<Mutator()>
-		// Mutator is a func(struct)struct
-		name := i.GetSlugName()
-		implTplFuncs[name] = func(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
-			// the provided argument becomes the template root dot {{.}}
-			tpl := tplTypesTpl["tplType"+name]
-			var buf bytes.Buffer
-			data := &TemplateTplDot{StructDecl: origin, Args: args}
-			err2 := tpl.Execute(&buf, data)
-			if err2 == nil {
-				// we shall parse it
-				pkgName := pkgDecl.GetName()
-				newFileDef, err3 := InterpretString(pkgName, buf.String())
-				if err3 != nil {
-					fmt.Printf("%#v\n", err3)
-					panic(err3)
-				}
-				pkgsD := newFileDef.FindPackagesDecl()
-				pkgD := pkgsD[0]
-				newFileDef.Remove(pkgD)
-				newStruct := newFileDef.FindStructsTypes()[0] // a type for a type
-				// should it be added to the current template data ?
-				// structTypes = append(structTypes, newStruct)
-				// note, it is expected the type gets added to the package repository.
-
-				// dont forget to attach its method.
-				for _, f := range newFileDef.FindFuncs() {
-					newStruct.AddMethod(f)
-				}
-
-				// add it to the currentImpl being processed.
-				if _, ok := implTplResults[currentImplName]; ok == false {
-					implTplResults[currentImplName] = []*glang.StructDecl{}
-				}
-				implTplResults[currentImplName] = append(implTplResults[currentImplName], newStruct)
-
-				return newStruct, nil
-			}
-			return origin, err2
-		}
+		outData.tplTypesMutators = append(outData.tplTypesMutators, &TypeMutator{
+			Decl:  i,
+			funcs: tplTypesFuncs,
+		})
 	}
 
-	for _, i := range structTypes {
-		// declare regular structs as data protperties
-		implTplData[i.GetName()] = i
-	}
-
-	for _, i := range implTypes {
-		// foreach implements<...> declaration,
-		// create a template of the identifier <...>, where
-		// functions are type mutators(originStructType),
-		// and data are the regular structs within the package
-		currentImplName = i.GetName()
-		tplContent := i.ImplementTemplate.String()
-		t, err2 := template.New("gigo").Funcs(implTplFuncs).Delims("<:", ":>").Parse(tplContent)
-		if err2 != nil {
-			fmt.Println(tplContent)
-			panic(err2)
-		}
-		err3 := t.Execute(ioutil.Discard, implTplData)
-		if err3 != nil {
-			fmt.Println(tplContent)
-			panic(err3)
-		}
-
-		// finalzie the implements instruction into a regular struct
-		// it becomes regular go code.
-		i.SetTokenValue(glanglexer.ImplementsToken, "struct")
-		i.RemoveT(glanglexer.TplOpenToken) // get ride of the template mutations
-		if len(implTplResults[currentImplName]) > 0 {
-			xx := implTplResults[currentImplName][len(implTplResults[currentImplName])-1]
-
-			tok := genericinterperter.NewTokenWithPos(lexer.Token{Type: genericlexer.WordToken, Value: xx.GetName()}, 0, 0)
-			nl := genericinterperter.NewTokenWithPos(lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, 0, 0)
-			ws := genericinterperter.NewTokenWithPos(lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, 0, 0)
-
-			ID := glang.NewIdentifierDecl(tok)
-			ID.AddExpr(tok)
-			i.GetBlock().Underlying = append(i.GetBlock().Underlying, ID)
-			i.GetBlock().InsertAt(1, nl)
-			i.GetBlock().InsertAt(2, ws)
-			i.GetBlock().InsertAt(3, ID)
-		}
-		currentImplName = ""
-	}
+	// need to remove comments, they are not understood by template.Template,
+	// and if they contain the template syntax, it breaks becasue template evaluate them.
+	// on the other hand, GigoInterpreter does not interpret comments, so it can t see and manage those
+	// problematic strings. :/
+	// finally the idea is to lacehold the comments, its kind of noop, works well.
+	x := placeholdComments(genericlexer.CommentBlockToken, fileDef, "blockcomments")
+	outData.placeholders = append(outData.placeholders, x...)
+	y := placeholdComments(genericlexer.CommentLineToken, fileDef, "linecomments")
+	outData.placeholders = append(outData.placeholders, y...)
 
 	tplContent := fileDef.String()
 	// execute the modified file tree with a taylor made template context.
 
-	// set . to a structure which is able to resolve a placeholder,
-	// a placeholder => {{.GetResult placeholderID }}
-	data := &Tomate{
-		placeholders:   placeholders,
-		implTypes:      implTypes,
-		implTplResults: implTplResults,
-	}
-
-	t, err2 := template.New("gigo").Funcs(implTplFuncs).Delims("<:", ":>").Parse(tplContent)
-	if err2 != nil {
-		panic(err2)
-	}
-	err3 := t.Execute(os.Stdout, data)
+	t := makeTplOfSource("gigo", tplContent, map[string]interface{}{})
+	err3 := t.Execute(os.Stdout, outData)
 	// err3 := t.Execute(ioutil.Discard, data)
 	if err3 != nil {
-		panic(err3)
+		fErr := genericinterperter.NewStringTplSyntaxError(err3, "gigo", tplContent)
+		fmt.Printf("%#v\n", fErr)
+		panic(fErr)
 	}
 	// fmt.Println((fileDef.String()))
 	// genericinterperter.Dump(fileDef, 0)
@@ -310,25 +191,28 @@ func main() {
 }
 
 type Tomate struct {
-	placeholders   map[string]*glang.ImplementDecl
-	implTypes      []*glang.ImplementDecl
-	implTplResults map[string][]*glang.StructDecl
+	placeholders     []mutationExecuter
+	tplTypesMutators []*TypeMutator
+	implTplData      map[string]interface{}
 }
 
-func (t *Tomate) GetResult(pl string) string {
-	if impl, ok := t.placeholders[pl]; ok {
-		for _, i := range t.implTypes {
-			if i.GetName() == impl.GetName() {
-				str := "\n"
-				for _, x := range t.implTplResults[i.GetName()] {
-					str += x.String() + "\n"
-					for _, m := range x.Methods {
-						str += m.String() + "\n"
-					}
-				}
-				return str
-			}
+func (t *Tomate) getPlaceholder(name string) mutationExecuter {
+	for _, p := range t.placeholders {
+		if p.getName() == name {
+			return p
 		}
+	}
+	return nil
+}
+func (t *Tomate) GetResult(name string) string {
+	pl := t.getPlaceholder(name)
+
+	if pl != nil {
+		res, err := pl.execute(t.tplTypesMutators, t.implTplData)
+		if err != nil {
+			panic(err)
+		}
+		return res
 	}
 	return "not found"
 }
@@ -384,15 +268,260 @@ func InterpretString(pkgName, content string) (*glang.StrDecl, error) {
 	return interpret.ProcessStr(content, reader)
 }
 
-var plToken lexer.TokenType = -200
-var plIndex = 0
+func MustInterpretFile(fileName string) *glang.FileDecl {
+	ret, err := InterpretFile(fileName)
+	if err != nil {
+		fmt.Printf("%#v\n", err)
+		panic(err)
+	}
+	return ret
+}
 
-func placeholderToken(of genericinterperter.Tokener) (string, *genericinterperter.TokenWithPos) {
-	name := fmt.Sprintf("placholder%v", plIndex)
+func MustInterpretString(name, content string) *glang.StrDecl {
+	ret, err := InterpretString(name, content)
+	if err != nil {
+		fmt.Printf("%#v\n", err)
+		panic(err)
+	}
+	return ret
+}
+
+var plToken lexer.TokenType = -200
+
+func placeholderToken(name string, pos genericinterperter.TokenPos) *genericinterperter.TokenWithPos {
 	tok := lexer.Token{
 		Type:  plToken,
 		Value: fmt.Sprintf("<:.GetResult \"%v\":>", name),
 	}
-	plIndex++
-	return name, genericinterperter.NewTokenWithPos(tok, of.GetPos().Line, of.GetPos().Pos)
+	return genericinterperter.NewTokenWithPos(tok, pos.Line, pos.Pos)
+}
+
+func placeholdComments(T lexer.TokenType, src *glang.FileDecl, prefix string) []mutationExecuter {
+	ret := []mutationExecuter{}
+	for _, c := range src.FindAll(T) {
+		name := fmt.Sprintf("placeholder%v%v", prefix, len(ret))
+		m := NewPlaceholderMutation(name, c.GetTokens()[0])
+		ret = append(ret, m)
+		src.InsertAfter(c, m.PlaceholderDecl)
+		src.Remove(c)
+	}
+	return ret
+}
+
+type mutationExecuter interface {
+	execute(mutators []*TypeMutator, data interface{}) (string, error)
+	getName() string
+}
+
+type placeholderMutation struct {
+	OriginDecl      genericinterperter.Tokener
+	PlaceholderDecl *genericinterperter.TokenWithPos
+	Name            string
+}
+
+func (p *placeholderMutation) getName() string {
+	return p.Name
+}
+func (p *placeholderMutation) execute(mutators []*TypeMutator, data interface{}) (string, error) {
+	return p.OriginDecl.String(), nil
+}
+
+func NewPlaceholderMutation(name string, of genericinterperter.Tokener) *placeholderMutation {
+	return &placeholderMutation{
+		OriginDecl:      of,
+		PlaceholderDecl: placeholderToken(name, of.GetPos()),
+		Name:            name,
+	}
+}
+
+type placeholderTypeMutation struct {
+	mutation        *ImplTypeMutation
+	PlaceholderDecl *genericinterperter.TokenWithPos
+	Name            string
+}
+
+func (p *placeholderTypeMutation) getName() string {
+	return p.Name
+}
+func (p *placeholderTypeMutation) execute(mutators []*TypeMutator, data interface{}) (string, error) {
+	expr, err := p.mutation.mutate(mutators, data)
+	return expr.String(), err
+}
+
+func NewPlaceholderTypeMutation(name string, of *glang.ImplementDecl) *placeholderTypeMutation {
+	return &placeholderTypeMutation{
+		mutation:        &ImplTypeMutation{Decl: of},
+		PlaceholderDecl: placeholderToken(name, of.GetPos()),
+		Name:            name,
+	}
+}
+
+func getTemplateStr(impl *glang.TemplateDecl) string {
+	tplContent := ""
+	// the template declares a type like this
+	// template XXXX struct{}
+	// it is needed to replace the template keyword by a type.
+	// => type XXXX struct{}
+	if y := impl.GetToken(glanglexer.TemplateToken); y != nil {
+		// y.SetType(glanglexer.TypeToken) // not needed to update
+		y.SetValue("type")
+	}
+	tplContent += impl.String()
+	for _, m := range impl.Methods {
+		tplContent += m.String()
+		if m.GetModifier() != nil { // test if there is a front modifier like <range $m :=...>
+			tplContent += "<:end:>" // close the template expression, quick and dirty, but just works :)
+		}
+	}
+	return tplContent
+}
+func makeTplOfSource(name, src string, funcs map[string]interface{}) *template.Template {
+	t, err := template.New(name).Funcs(funcs).Delims("<:", ":>").Parse(src)
+	if err != nil {
+		// fmt.Println(src)
+		fErr := genericinterperter.NewStringTplSyntaxError(err, name, src)
+		fmt.Printf("%#v\n", fErr)
+		panic(fErr)
+	}
+	return t
+}
+
+func stubFunc(content string) func() error {
+	return func() error {
+		fmt.Println("template func content is")
+		fmt.Println(content)
+		return nil
+	}
+}
+
+type TypeMutator struct {
+	Decl  *glang.TemplateDecl
+	funcs map[string]interface{}
+}
+
+func (t *TypeMutator) getTemplateStr() string {
+	tplContent := ""
+	// the template declares a type like this
+	// template XXXX struct{}
+	// it is needed to replace the template keyword by a type.
+	// => type XXXX struct{}
+	if y := t.Decl.GetToken(glanglexer.TemplateToken); y != nil {
+		// y.SetType(glanglexer.TypeToken) // not needed to update
+		y.SetValue("type")
+	}
+	tplContent += t.Decl.String()
+	for _, m := range t.Decl.Methods {
+		tplContent += m.String()
+		if m.GetModifier() != nil { // test if there is a front modifier like <range $m :=...>
+			tplContent += "<:end:>" // close the template expression, quick and dirty, but just works :)
+		}
+	}
+	return tplContent
+}
+func (t *TypeMutator) execute(data interface{}) (string, error) {
+	name := t.Decl.GetName()
+	src := t.getTemplateStr()
+	tpl := makeTplOfSource(name, src, t.funcs)
+	var buf bytes.Buffer
+	err := tpl.Execute(&buf, data)
+	return buf.String(), err
+}
+func (t *TypeMutator) mutate(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
+	// the provided argument becomes the template root dot {{.}}
+	arg := &TemplateTplDot{StructDecl: origin, Args: args}
+	content, err := t.execute(arg)
+	if err == nil {
+		// we shall parse it
+		newFileDef := MustInterpretString("random", content)
+		newStruct := newFileDef.FindStructsTypes()[0] // a type for a type
+
+		// should it be added to the current template data ?
+		// structTypes = append(structTypes, newStruct)
+		// note, it is expected the type gets added to the package repository.
+
+		// dont forget to attach its method.
+		for _, f := range newFileDef.FindFuncs() {
+			newStruct.AddMethod(f)
+		}
+		return newStruct, nil
+	}
+	return origin, err
+}
+
+type ImplTypeMutation struct {
+	scope genericinterperter.Expression
+	Decl  *glang.ImplementDecl
+	Res   []*glang.StructDecl
+}
+
+func (t *ImplTypeMutation) getMutationFunc(m *TypeMutator) func(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
+	return func(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
+		res, err := m.mutate(origin, args)
+		if err == nil {
+			t.Res = append(t.Res, res)
+		}
+		return res, err
+	}
+}
+
+func (t *ImplTypeMutation) mutate(mutators []*TypeMutator, data interface{}) (*glang.StrDecl, error) {
+	// in a decl like implement<X Y Z>
+	// X Y Z are func template of a template string "X Y Z"
+	funcs := map[string]interface{}{}
+	for _, m := range mutators {
+		name := m.Decl.GetSlugName()
+		funcs[name] = t.getMutationFunc(m)
+	}
+
+	tplContent := t.Decl.String()
+	tpl := makeTplOfSource("gigo", tplContent, funcs)
+	if err := tpl.Execute(ioutil.Discard, data); err != nil {
+		fmt.Println(tplContent)
+		return nil, err
+	}
+	// once the template "X Y Z" invoked => new struct type is added to t.Res
+
+	// finalize the implements instruction into a regular struct
+	// it becomes regular go code.
+	// from => type xxx impements<y u i>{}
+	// to => type xxx struct{}
+	i := t.Decl
+	i.SetTokenValue(glanglexer.ImplementsToken, "struct")
+	i.RemoveT(glanglexer.TplOpenToken) // get ride of the template mutations
+
+	strDecl := &glang.StrDecl{}
+
+	if len(t.Res) > 0 {
+		// if any mutations is found, get the last one,
+		// and apply it to the original type
+		last := t.Res[len(t.Res)-1]
+
+		tok := genericinterperter.NewTokenWithPos(lexer.Token{Type: genericlexer.WordToken, Value: last.GetName()}, 0, 0)
+		nl := genericinterperter.NewTokenWithPos(lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, 0, 0)
+		ws := genericinterperter.NewTokenWithPos(lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, 0, 0)
+
+		// define the last genrated type as an underlying type of i
+		ID := glang.NewIdentifierDecl(tok)
+		ID.AddExpr(tok)
+		i.GetBlock().Underlying = append(i.GetBlock().Underlying, ID)
+		i.GetBlock().InsertAt(1, nl)
+		i.GetBlock().InsertAt(2, ws)
+		i.GetBlock().InsertAt(3, ID)
+
+		// add every generated types and all of their methods to the string decl
+		for _, r := range t.Res {
+			strDecl.AddExprs(r.Tokens)
+			nl := genericinterperter.NewTokenWithPos(lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, 0, 0)
+			strDecl.AddExpr(nl)
+			for _, m := range r.Methods {
+				strDecl.AddExprs(m.GetTokens())
+				nl := genericinterperter.NewTokenWithPos(lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, 0, 0)
+				strDecl.AddExpr(nl)
+			}
+		}
+	}
+	// finally add the original modified I struct to the string decl
+	strDecl.AddExpr(i)
+
+	return strDecl, nil
 }

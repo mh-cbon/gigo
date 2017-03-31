@@ -117,6 +117,19 @@ type ParseError struct {
 	gotType     string
 }
 
+//NewParseError creates a parse error
+func NewParseError(n Tokener, reason, got string, wanted []string) *ParseError {
+	return &ParseError{
+		SyntaxError: SyntaxError{
+			reason: reason,
+			line:   n.GetPos().Line,
+			pos:    n.GetPos().Pos,
+		},
+		wantedTypes: wanted,
+		gotType:     got,
+	}
+}
+
 func (f *ParseError) Error() string {
 	return fmt.Sprintf(
 		"%v (wanted=%v, got=%v)",

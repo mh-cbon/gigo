@@ -69,7 +69,7 @@ func (t todoList) Push(t todo) {
 // - Ensure it exposes a public API which is totally thread safe
 
 
-type Todos implements<Mutexed (Slice .Todo "Name")> {
+type Todos implements<:Mutexed (Slice .Todo "Name")> {
   // it reads as a mutexed list of todo.
 }
 
@@ -141,36 +141,36 @@ func (c Consumer) RmTodo(t Todo) error {
 // the programmer fixed a tricky problem
 // in a glance!
 
-template Mutexed<.Name> struct {
+template Mutexed<:.Name> struct {
   lock *sync.Mutex
-  embed <.Name>
+  embed <:.Name>
 }
 
-<range $m := .Methods> func (m Mutexed<$.Name>) <$m.Name>(<$m.Params>) <$m.Out> {
+<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.Params>) <:$m.Out> {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed.<:$m.GetName>(<:$m.GetArgs>)
 }
 
-template <.Name>Slice struct {
-  items []<.Name>
+template <:.Name>Slice struct {
+  items []<:.Name>
 }
 
-<range $a := .Args> func (m <$.Name>Slice) FindBy<$a>(<$a> <$.ArgType $a>) (<$.Name>,bool) {
+<:range $a := .Args> func (m <:$.Name>Slice) FindBy<:$a>(<:$a> <:$.ArgType $a>) (<:$.Name>,bool) {
   for i, items := range s.items {
-    if item.<$a> == <$a> {
+    if item.<:$a> == <:$a> {
       return item, true
     }
   }
-  return {}<$.Name>, false
+  return {}<:$.Name>, false
 }
 
-func (s <.Name>Slice) Push(item <.Name>) int {
+func (s <:.Name>Slice) Push(item <:.Name>) int {
   s.items = append(s.items, item)
   return len(s.items)
 }
 
-func (s <.Name>Slice) Index(item <.Name>) int {
+func (s <:.Name>Slice) Index(item <:.Name>) int {
   for i, items := range s.items {
     if item == search {
       return i
@@ -179,11 +179,11 @@ func (s <.Name>Slice) Index(item <.Name>) int {
   return -1
 }
 
-func (s <.Name>Slice) RemoveAt(i index) int {
+func (s <:.Name>Slice) RemoveAt(i index) int {
 	s.items = append(s.items[:i], s.items[i+1:]...)
 }
 
-func (s <.Name>Slice) Remove(item <.Name>) int {
+func (s <:.Name>Slice) Remove(item <:.Name>) int {
   if i:= s.Index(item); i > -1 {
     s.RemoveAt(i)
     return i

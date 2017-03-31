@@ -67,19 +67,18 @@ func (t todoList) Push(t todo) {
 // - defines a concrete type to name a []Todo
 // - Apply it Slice capability to provide methods such Push/Index/Remove ect
 // - Ensure it exposes a public API which is totally thread safe
-
 type TodoSlice struct {
   items []Todo
 }
 
 
- func (m TodoSlice) FindByName(Name string) (Todo,bool) {
+ func (m TodoSlice) FindBy[Name]([Name] ) (Todo,bool) {
   for i, items := range s.items {
-    if item.<$a> == <$a> {
+    if item.[Name] == [Name] {
       return item, true
     }
   }
-  return {}<$.Name>, false
+  return {}Todo, false
 }
 
 
@@ -105,7 +104,7 @@ func (s TodoSlice) RemoveAt(i index) int {
 
 
 func (s TodoSlice) Remove(item Todo) int {
-  if i:= s.Index(item); i > -1 {
+  if i:= s.Index(item); i :> -1 {
     s.RemoveAt(i)
     return i
   }
@@ -120,30 +119,30 @@ type MutexedTodoSlice struct {
 }
 
 
- func (m MutexedTodoSlice)  FindByName((Name string))  (Todo,bool) {
+ func (m MutexedTodoSlice)  FindBy[Name](([Name] ))  (Todo,bool) {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. FindBy[Name](([Name] ))
 }
  func (m MutexedTodoSlice)  Push((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. Push((item Todo))
 }
  func (m MutexedTodoSlice)  Index((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. Index((item Todo))
 }
  func (m MutexedTodoSlice)  RemoveAt((i index))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. RemoveAt((i index))
 }
  func (m MutexedTodoSlice)  Remove((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. Remove((item Todo))
 }
 
 

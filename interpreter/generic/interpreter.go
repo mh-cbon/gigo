@@ -191,11 +191,6 @@ func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error
 		// tbd adjust the position
 		n = NewTokenEOF()
 	}
-	return I.Scope.FinalizeErr(&SyntaxError{
-		reason:      reason,
-		wantedTypes: wanted,
-		gotType:     glanglexer.TokenType(n.GetType()),
-		line:        n.GetPos().Line,
-		pos:         n.GetPos().Pos,
-	})
+	got := glanglexer.TokenType(n.GetType())
+	return I.Scope.FinalizeErr(NewParseError(n, reason, got, wanted))
 }

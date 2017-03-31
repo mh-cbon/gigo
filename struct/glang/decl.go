@@ -12,6 +12,9 @@ type ScopeDecl struct {
 	genericinterperter.Expression
 }
 
+func (f *ScopeDecl) GrepLine(line int) []genericinterperter.Tokener {
+	return f.GetTokensAtLine(line)
+}
 func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 	var ret []*PackageDecl
 	for _, t := range f.Filter(glanglexer.PackageToken) {
@@ -95,8 +98,8 @@ type StrDecl struct {
 	Src string
 }
 
-func (f *StrDecl) FinalizeErr(err *genericinterperter.SyntaxError) error {
-	return &genericinterperter.StringSyntaxError{Src: f.Src, Filepath: "<noname>", SyntaxError: *err}
+func (f *StrDecl) FinalizeErr(err *genericinterperter.ParseError) error {
+	return &genericinterperter.StringSyntaxError{Src: f.Src, Filepath: "<noname>", ParseError: *err}
 }
 
 func (p *StrDecl) GetName() string {
@@ -108,8 +111,8 @@ type FileDecl struct {
 	Name string
 }
 
-func (f *FileDecl) FinalizeErr(err *genericinterperter.SyntaxError) error {
-	return &genericinterperter.FileSyntaxError{Src: f.GetName(), SyntaxError: *err}
+func (f *FileDecl) FinalizeErr(err *genericinterperter.ParseError) error {
+	return &genericinterperter.FileSyntaxError{Src: f.GetName(), ParseError: *err}
 }
 
 func (p *FileDecl) GetName() string {
@@ -311,6 +314,12 @@ func (t *TemplateFuncDecl) GetModifier() *BodyBlockDecl {
 func (t *TemplateFuncDecl) GetReceiver() *PropsBlockDecl {
 	return t.Func.GetReceiver()
 }
+func (t *TemplateFuncDecl) GetBody() *BodyBlockDecl {
+	return t.Func.GetBody()
+}
+func (t *TemplateFuncDecl) GetArgs() *PropsBlockDecl {
+	return t.Func.GetArgs()
+}
 
 type FuncDeclarer interface {
 	genericinterperter.Expressioner
@@ -322,6 +331,9 @@ type FuncDeclarer interface {
 	GetReceiver() *PropsBlockDecl
 	String() string
 	GetModifier() *BodyBlockDecl
+	GetBody() *BodyBlockDecl
+	GetArgs() *PropsBlockDecl
+	GetPos() genericinterperter.TokenPos
 }
 
 type FuncDecl struct {
@@ -334,6 +346,12 @@ type FuncDecl struct {
 	Body     *BodyBlockDecl
 }
 
+func (p *FuncDecl) GetArgs() *PropsBlockDecl {
+	return p.Params
+}
+func (p *FuncDecl) GetBody() *BodyBlockDecl {
+	return p.Body
+}
 func (p *FuncDecl) GetReceiver() *PropsBlockDecl {
 	return p.Receiver
 }

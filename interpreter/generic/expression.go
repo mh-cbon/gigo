@@ -14,7 +14,7 @@ type ExprReceiver interface {
 type ScopeReceiver interface {
 	ExprReceiver
 	GetName() string
-	FinalizeErr(*SyntaxError) error
+	FinalizeErr(*ParseError) error
 }
 
 type TokenPos struct {
@@ -67,6 +67,18 @@ func (f *TokenWithPos) SetTokenValue(T lexer.TokenType, v string) {
 		f.SetValue(v)
 	}
 }
+func (f *TokenWithPos) GetTokensAtLine(line int) []Tokener {
+	if f.Pos.Line == line {
+		return []Tokener{f}
+	}
+	return []Tokener{}
+}
+func (f *TokenWithPos) FindAll(T lexer.TokenType) []Expressioner {
+	if f.GetType() == T {
+		return []Expressioner{f}
+	}
+	return []Expressioner{}
+}
 
 func NewTokenWithPos(t lexer.Token, line, pos int) *TokenWithPos {
 	return &TokenWithPos{
@@ -98,12 +110,23 @@ type Expressioner interface {
 	Remove(Expressioner) bool
 	PrependExpr(Tokener)
 	PrependExprs([]Tokener)
-	GetToken(T lexer.TokenType) Tokener
-	SetTokenValue(T lexer.TokenType, v string)
+	GetToken(lexer.TokenType) Tokener
+	SetTokenValue(lexer.TokenType, string)
+	GetTokensAtLine(int) []Tokener
+	FindAll(lexer.TokenType) []Expressioner
 }
 
 type Expression struct {
 	Tokens []Tokener
+}
+
+// GetTokensAtLine finds all tokens at line.
+func (f *Expression) GetTokensAtLine(line int) []Tokener {
+	ret := []Tokener{}
+	for _, t := range f.GetExprs() {
+		ret = append(ret, t.GetTokensAtLine(line)...)
+	}
+	return ret
 }
 
 // Filter root tokens of type T.
@@ -238,6 +261,16 @@ func (f *Expression) GetExprs() []Expressioner {
 	}
 	return ret
 }
+
+// FindAll returns all expressions of type T.
+func (f *Expression) FindAll(T lexer.TokenType) []Expressioner {
+	var ret []Expressioner
+	for _, t := range f.GetExprs() {
+		ret = append(ret, t.FindAll(T)...)
+	}
+	return ret
+}
+
 func (f *Expression) AddExpr(expr Tokener) {
 	if expr == nil || expr == Tokener(nil) {
 		panic("rrr")
