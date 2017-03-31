@@ -108,7 +108,8 @@ package main
 type Todo struct {
   Name string
   Done bool
-}// a template to generate a type Slice of .
+}
+// a template to generate a type Slice of .
 type TodoSlice struct {
   items []Todo
 }
