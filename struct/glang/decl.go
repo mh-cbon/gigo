@@ -8,13 +8,17 @@ import (
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
 )
 
+// ScopeDecl defines the source code origin, a file o string.
 type ScopeDecl struct {
 	genericinterperter.Expression
 }
 
+// GrepLine finds all token on given line.
 func (f *ScopeDecl) GrepLine(line int) []genericinterperter.Tokener {
 	return f.GetTokensAtLine(line)
 }
+
+// FindPackagesDecl returns all package declarations found.
 func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 	var ret []*PackageDecl
 	for _, t := range f.Filter(glanglexer.PackageToken) {
@@ -24,6 +28,8 @@ func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 	}
 	return ret
 }
+
+// FindImplementsTypes returns all implements declarations found.
 func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 	var ret []*ImplementDecl
 	for _, t := range f.Filter(glanglexer.ImplementsToken) {
@@ -33,6 +39,8 @@ func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 	}
 	return ret
 }
+
+// FindStructsTypes returns all struct declarations found.
 func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 	var ret []*StructDecl
 	for _, t := range f.Filter(glanglexer.StructToken) {
@@ -42,6 +50,8 @@ func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 	}
 	return ret
 }
+
+// FindTemplatesTypes returns all template declarations found.
 func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 	var ret []*TemplateDecl
 	for _, t := range f.Filter(glanglexer.TemplateToken) {
@@ -51,6 +61,8 @@ func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 	}
 	return ret
 }
+
+// FindInterfaces returns all interface type declarations found.
 func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
 	var ret []*InterfaceDecl
 	for _, t := range f.Filter(glanglexer.InterfaceToken) {
@@ -60,6 +72,8 @@ func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
 	}
 	return ret
 }
+
+// FindFuncs returns all func declarations found.
 func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 	var ret []*FuncDecl
 	for _, t := range f.Filter(glanglexer.FuncToken) {
@@ -69,6 +83,8 @@ func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 	}
 	return ret
 }
+
+// FindTemplateFuncs returns all funcs with templating declarations found.
 func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 	var ret []FuncDeclarer
 	for _, t := range f.Filter(glanglexer.TplOpenToken) {
@@ -83,6 +99,8 @@ func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 	}
 	return ret
 }
+
+// FindDefineFuncs returns all <define> declarations found.
 func (f *ScopeDecl) FindDefineFuncs() []*TemplateFuncDecl {
 	var ret []*TemplateFuncDecl
 	for _, t := range f.Filter(glanglexer.TplOpenToken) {
@@ -93,32 +111,39 @@ func (f *ScopeDecl) FindDefineFuncs() []*TemplateFuncDecl {
 	return ret
 }
 
+// StrDecl is a string source code.
 type StrDecl struct {
 	ScopeDecl
 	Src string
 }
 
+// FinalizeErr contextualize an error for pretty printing.
 func (f *StrDecl) FinalizeErr(err *genericinterperter.ParseError) error {
 	return &genericinterperter.StringSyntaxError{Src: f.Src, Filepath: "<noname>", ParseError: *err}
 }
 
-func (p *StrDecl) GetName() string {
+// GetName implements ScopeReceiver
+func (f *StrDecl) GetName() string {
 	return "noname"
 }
 
+// FileDecl is a source code from a file.
 type FileDecl struct {
 	ScopeDecl
 	Name string
 }
 
+// FinalizeErr contextualize an error for pretty printing.
 func (f *FileDecl) FinalizeErr(err *genericinterperter.ParseError) error {
 	return &genericinterperter.FileSyntaxError{Src: f.GetName(), ParseError: *err}
 }
 
-func (p *FileDecl) GetName() string {
-	return p.Name
+// GetName implements ScopeReceiver
+func (f *FileDecl) GetName() string {
+	return f.Name
 }
 
+// PackageDecl for package <name> declaratons
 type PackageDecl struct {
 	genericinterperter.Tokener
 	genericinterperter.Expression
@@ -129,6 +154,7 @@ func (p *PackageDecl) String() string {
 	return p.Expression.String()
 }
 
+// GetName returns the name of the package.
 func (p *PackageDecl) GetName() string {
 	return p.Name.GetValue()
 }

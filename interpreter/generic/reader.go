@@ -9,18 +9,13 @@ import (
 	lexer "github.com/mh-cbon/state-lexer"
 )
 
+// TokenReader return Token or nil.
 type TokenReader func() *lexer.Token
+
+// TokenerReader return Tokener or nil.
 type TokenerReader func() Tokener
 
-type TokenNamer func(lexer.Token) string
-type TokenerNamer func(Tokener) string
-
-func TokenerName(h TokenNamer) TokenerNamer {
-	return func(t Tokener) string {
-		return h(lexer.Token{Type: t.GetType(), Value: t.GetValue()})
-	}
-}
-
+// PositionnedTokenReader turns a TokenReader into a feed of Tokener.
 func PositionnedTokenReader(reader TokenReader) func() Tokener {
 	var line = 1
 	var pos = 0
@@ -38,6 +33,7 @@ func PositionnedTokenReader(reader TokenReader) func() Tokener {
 	}
 }
 
+// PrettyPrint a feed of token being read.
 func PrettyPrint(reader TokenerReader, namer TokenerNamer) func() Tokener {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.Debug)
 	fmt.Fprintf(w, "%v\t %v\t %q\n", "Line:Pos", "TokenName:tok.Type", "tok.Value")
@@ -52,5 +48,18 @@ func PrettyPrint(reader TokenerReader, namer TokenerNamer) func() Tokener {
 			w.Flush()
 		}
 		return nil
+	}
+}
+
+// TokenNamer gives the name of a Token.
+type TokenNamer func(lexer.Token) string
+
+// TokenerNamer gives the name of a Tokener.
+type TokenerNamer func(Tokener) string
+
+// TokenerName turns a TokenNamer into a TokenerNamer.
+func TokenerName(h TokenNamer) TokenerNamer {
+	return func(t Tokener) string {
+		return h(lexer.Token{Type: t.GetType(), Value: t.GetValue()})
 	}
 }

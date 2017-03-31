@@ -5,18 +5,21 @@ import (
 	lexer "github.com/mh-cbon/state-lexer"
 )
 
+// Interpreter navigates a tokens list to produce a tokens tree.
 type Interpreter struct {
 	position int
 	Tokens   []Tokener
 	Scope    ScopeReceiver
 }
 
+// NewInterpreter makes an Interpreter starting at -1
 func NewInterpreter() *Interpreter {
 	return &Interpreter{
 		position: -1,
 	}
 }
 
+// Next gives the next token.
 func (I *Interpreter) Next() Tokener {
 	if I.position < len(I.Tokens) {
 		I.position++
@@ -26,12 +29,16 @@ func (I *Interpreter) Next() Tokener {
 	}
 	return nil
 }
+
+// Rewind returns to the previous token, if any.
 func (I *Interpreter) Rewind() {
 	I.position--
 	if I.position < -1 {
 		I.position = -1
 	}
 }
+
+// Last is the token at current position.
 func (I *Interpreter) Last() Tokener {
 	if I.position > -1 && I.position < len(I.Tokens) {
 		return I.Tokens[I.position]
@@ -39,10 +46,12 @@ func (I *Interpreter) Last() Tokener {
 	return nil
 }
 
+// Ended when the tokens list is empty.
 func (I *Interpreter) Ended() bool {
 	return len(I.Tokens) == 0
 }
 
+// Current unemitted tokens.
 func (I *Interpreter) Current() []Tokener {
 	if I.position < 0 {
 		return I.Tokens[:0]
@@ -53,6 +62,7 @@ func (I *Interpreter) Current() []Tokener {
 	return I.Tokens[:I.position+1]
 }
 
+// Emit current tokens in buffer.
 func (I *Interpreter) Emit() []Tokener {
 	toks := []Tokener{}
 	c := I.Current()
@@ -63,6 +73,7 @@ func (I *Interpreter) Emit() []Tokener {
 	return toks
 }
 
+// Flush current tokens in buffer.
 func (I *Interpreter) Flush() {
 	if I.position+1 < len(I.Tokens) {
 		I.Tokens = I.Tokens[I.position+1:]
@@ -72,11 +83,14 @@ func (I *Interpreter) Flush() {
 	I.position = -1
 }
 
+// PeekOne returns next token without changing position.
 func (I *Interpreter) PeekOne() Tokener {
 	t := I.Next()
 	I.Rewind()
 	return t
 }
+
+// PeekN returns N tokens without changing position.
 func (I *Interpreter) PeekN(n int) []Tokener {
 	var ret []Tokener
 	for i := 0; i < n; i++ {
@@ -88,14 +102,7 @@ func (I *Interpreter) PeekN(n int) []Tokener {
 	return ret
 }
 
-// func (I *Interpreter) MustRead(T lexer.TokenType) Tokener {
-// 	t := I.Read(T)
-// 	if t == nil {
-// 		panic(I.Debug("Token is unexpected: ", T))
-// 	}
-// 	return t
-// }
-
+// Peek returns nil if the next token is not of type T.
 func (I *Interpreter) Peek(T lexer.TokenType) Tokener {
 	t := I.Next()
 	if t == nil {
@@ -106,6 +113,7 @@ func (I *Interpreter) Peek(T lexer.TokenType) Tokener {
 	return t
 }
 
+// Read advances the position if next token is of type T.
 func (I *Interpreter) Read(T lexer.TokenType) Tokener {
 	t := I.Next()
 	if t == nil || t.GetType() != T {
@@ -115,6 +123,7 @@ func (I *Interpreter) Read(T lexer.TokenType) Tokener {
 	return t
 }
 
+// ReadMany advances until next token is not of types T.
 func (I *Interpreter) ReadMany(Ts ...lexer.TokenType) []Tokener {
 	ret := []Tokener{}
 	for {
@@ -135,6 +144,7 @@ func (I *Interpreter) ReadMany(Ts ...lexer.TokenType) []Tokener {
 	return ret
 }
 
+// Get reads a token T and flushes the buffer.
 // bad idea ?
 func (I *Interpreter) Get(T lexer.TokenType) Tokener {
 	if t := I.Read(T); t != nil {
@@ -144,6 +154,7 @@ func (I *Interpreter) Get(T lexer.TokenType) Tokener {
 	return nil
 }
 
+// GetMany reads tokens until it is not of types T and flushes the buffer.
 // bad idea ?
 func (I *Interpreter) GetMany(T lexer.TokenType) []Tokener {
 	ret := I.ReadMany(T)
@@ -151,6 +162,7 @@ func (I *Interpreter) GetMany(T lexer.TokenType) []Tokener {
 	return ret
 }
 
+// ReadBlock reads the tokens as a block delimited by open/close Type ({..}).
 func (I *Interpreter) ReadBlock(open lexer.TokenType, close lexer.TokenType) []Tokener {
 
 	var ret []Tokener
@@ -178,6 +190,7 @@ func (I *Interpreter) ReadBlock(open lexer.TokenType, close lexer.TokenType) []T
 	return I.Current()
 }
 
+// Debug produces a SyntaxError when unexpected tokens are found.
 func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error {
 	wanted := []string{}
 	for _, w := range wantedTypes {

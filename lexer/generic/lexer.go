@@ -6,6 +6,7 @@ import (
 	lexer "github.com/mh-cbon/state-lexer"
 )
 
+// generic tokens
 const (
 	WsToken lexer.TokenType = iota
 	CommentLineToken
@@ -64,6 +65,8 @@ type Word struct {
 	CanEscape     bool
 	EscapeStr     string
 }
+
+// Words is a sortable list of Word.
 type Words []Word
 
 func (slice Words) Len() int {
@@ -78,6 +81,7 @@ func (slice Words) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
+// GetExactWord return a word whose content==w
 func (g *Lexer) GetExactWord(w string) (Word, bool) {
 	for _, word := range g.Words {
 		if word.Value == w {

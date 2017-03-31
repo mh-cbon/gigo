@@ -360,31 +360,30 @@ func TestOneImplements(t *testing.T) {
 	// genericinterperter.Dump(d, 0)
 }
 
-//
-// func TestOnePackageDecl(t *testing.T) {
-//
-// 	str := ``
-// 	d, err := interpretString("tomate", str)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-//
-// 	pkgs := d.FindPackagesDecl()
-// 	got := len(pkgs)
-// 	wanted := 1
-// 	if wanted != got {
-// 		t.Errorf("unexpected packages len wanted=%v, got=%v", wanted, got)
-// 	}
-//
-// 	pkg := pkgs[0]
-// 	sgot := pkg.GetName()
-// 	swanted := "tomate"
-// 	if swanted != sgot {
-// 		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
-// 	}
-//
-// 	// genericinterperter.Dump(d, 0)
-// }
+func TestOnePackageDecl(t *testing.T) {
+
+	str := ``
+	d, err := interpretString("tomate", str)
+	if err != nil {
+		t.Error(err)
+	}
+
+	pkgs := d.FindPackagesDecl()
+	got := len(pkgs)
+	wanted := 1
+	if wanted != got {
+		t.Errorf("unexpected packages len wanted=%v, got=%v", wanted, got)
+	}
+
+	pkg := pkgs[0]
+	sgot := pkg.GetName()
+	swanted := "tomate"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// genericinterperter.Dump(d, 0)
+}
 
 func interpretString(pkgName, content string) (*glang.StrDecl, error) {
 

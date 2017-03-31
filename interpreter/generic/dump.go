@@ -7,25 +7,11 @@ import (
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
 )
 
-// type PrettyPrint struct {
-// }
-//
-// func (p PrettyPrint) Format(s fmt.State, verb rune) {
-// 	switch verb {
-// 	case 'v':
-// 		if s.Flag('+') {
-// 			io.WriteString(s, p)
-// 			return
-// 		}
-// 		fallthrough
-// 	case 's':
-// 		io.WriteString(s, p)
-// 	case 'q':
-// 		fmt.Fprintf(s, "%q", p)
-// 	}
-// }
-
-func Dump(src Expressioner, lvl int) {
+// Dump recursively prints an expression
+func Dump(src Expressioner) {
+	dump(src, 0)
+}
+func dump(src Expressioner, lvl int) {
 	x := strings.Repeat(" ", lvl)
 	fmt.Printf("%v%-6v %-20T Tokens(%v)\n", x, "begin", src, len(src.GetExprs()))
 	exprs := src.GetExprs()
@@ -36,13 +22,17 @@ func Dump(src Expressioner, lvl int) {
 				glanglexer.TokenType(tok.GetType()),
 				tok.GetValue())
 		} else {
-			Dump(e, lvl+1)
+			dump(e, lvl+1)
 		}
 	}
 	fmt.Printf("%v%-6v %-20T tokens(%v)\n", x, "end", src, len(src.GetExprs()))
 }
 
-func DumpTokens(tokens []Tokener, lvl int) {
+// DumpTokens prints a list of tokens
+func DumpTokens(tokens []Tokener) {
+	dumpTokens(tokens, 0)
+}
+func dumpTokens(tokens []Tokener, lvl int) {
 	x := strings.Repeat(" ", lvl)
 	fmt.Printf("%v%-6v %-20T tokens(%v)\n", x, "begin", "<noname>", len(tokens))
 	for _, tok := range tokens {

@@ -20,7 +20,7 @@ func TokenType(Type lexer.TokenType) string {
 	return glang.TokenType(Type)
 }
 
-// New ...
+// New gigo lexer
 func New() *generic.Lexer {
 	ret := glang.New()
 	ret.Printer = TokenType

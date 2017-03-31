@@ -12,12 +12,11 @@ import (
 // SyntaxError is a syntax error
 type SyntaxError struct {
 	reason string
-	// wantedTypes []string
-	// gotType     string
-	line int
-	pos  int
+	line   int
+	pos    int
 }
 
+// NewSyntaxError creates a new syntax error of reason r and pos l:p
 func NewSyntaxError(r string, l, p int) SyntaxError {
 	return SyntaxError{
 		reason: r,
@@ -65,20 +64,16 @@ func (f *SyntaxError) PrettyPrint(lines []string) string {
 	// str += fmt.Sprintf("In file=%v At=%v:%v\n", name, line, pos)
 	// str += fmt.Sprintf("Found=%v wanted=%v\n", f.gotType, f.wantedTypes)
 
-	before := []string{}
-	about := ""
-	after := []string{}
 	toRead := len(lines) / 2
+	before := lines[:toRead]
+	about := lines[toRead]
+	after := lines[toRead+1:]
+	line -= toRead
 	if toRead > 2 {
 		before = lines[0 : toRead-1]
 		about = lines[toRead-1]
 		after = lines[toRead:]
-		line -= toRead
 	} else {
-		before = lines[:toRead]
-		about = lines[toRead]
-		after = lines[toRead+1:]
-		line -= toRead
 		line -= 2
 	}
 

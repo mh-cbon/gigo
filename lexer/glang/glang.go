@@ -5,6 +5,7 @@ import (
 	lexer "github.com/mh-cbon/state-lexer"
 )
 
+// tokens for a golang source code.
 const (
 	NumberToken lexer.TokenType = generic.TextToken + iota + 1
 	NlToken
