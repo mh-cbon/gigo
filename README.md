@@ -16,16 +16,15 @@ type Todos implements<:Mutexed (Slice .Todo "Name")> {
 
 func (t *Todos) Hello(){fmt.Println("Hello")}
 
-
 template Mutexed<:.Name> struct {
   lock *sync.Mutex
   embed <:.Name>
 }
 
-<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.Params>) <:$m.Out> {
+<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out> {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<:$m.GetName>(<:$m.Args>)
+  m.embed.<:$m.GetName>(<:$m.GetArgsNames | joinexpr ",">)
 }
 
 template <:.Name>Slice struct {
@@ -82,9 +81,9 @@ type TodoSlice struct {
 }
 
 
- func (m TodoSlice) FindBy[Name]([Name] ) (Todo,bool) {
+ func (m TodoSlice) FindByName(Name string) (Todo,bool) {
   for i, items := range s.items {
-    if item.[Name] == [Name] {
+    if item.Name == Name {
       return item, true
     }
   }
@@ -129,30 +128,30 @@ type MutexedTodoSlice struct {
 }
 
 
- func (m MutexedTodoSlice)  FindBy[Name](([Name] ))  (Todo,bool) {
+ func (m MutexedTodoSlice)  FindByName(Name string)  (Todo,bool) {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. FindBy[Name](([Name] ))
+  m.embed. FindByName(Name)
 }
- func (m MutexedTodoSlice)  Push((item Todo))  int {
+ func (m MutexedTodoSlice)  Push(item Todo)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. Push((item Todo))
+  m.embed. Push(item)
 }
- func (m MutexedTodoSlice)  Index((item Todo))  int {
+ func (m MutexedTodoSlice)  Index(item Todo)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. Index((item Todo))
+  m.embed. Index(item)
 }
- func (m MutexedTodoSlice)  RemoveAt((i index))  int {
+ func (m MutexedTodoSlice)  RemoveAt(i index)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. RemoveAt((i index))
+  m.embed. RemoveAt(i)
 }
- func (m MutexedTodoSlice)  Remove((item Todo))  int {
+ func (m MutexedTodoSlice)  Remove(item Todo)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. Remove((item Todo))
+  m.embed. Remove(item)
 }
 
 
@@ -167,6 +166,38 @@ func (t *Todos) Hello(){fmt.Println("Hello")}
 Still some work to be done, but you got the idea!
 
 ## Changes
+
+#### Fixed body parsing and printing
+
+Now when a template func is encountered
+
+```go
+<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out> {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed.<:$m.GetName>(<:$m.GetArgsNames | joinexpr ",">)
+}
+```
+
+Its body is evaluated, and some helpers have been added to properly display it.
+
+__before__
+```go
+ func (m MutexedTodoSlice)  Push((item Todo))  int {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed. Push((item Todo))
+}
+```
+__after__
+```go
+ func (m MutexedTodoSlice)  Push(item Todo)  int {
+  lock.Lock()
+  defer lock.Unlock()
+  m.embed. Push(item)
+}
+```
+
 
 #### Added nice error support
 

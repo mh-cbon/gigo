@@ -146,10 +146,10 @@ template Mutexed<:.Name> struct {
   embed <:.Name>
 }
 
-<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.Params>) <:$m.Out> {
+<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out> {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<:$m.GetName>(<:$m.GetArgs>)
+  m.embed.<:$m.GetName>(<:$m.GetArgsNames | joinexpr ",">)
 }
 
 template <:.Name>Slice struct {

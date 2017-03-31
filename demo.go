@@ -72,9 +72,9 @@ type TodoSlice struct {
 }
 
 
- func (m TodoSlice) FindBy[Name]([Name] ) (Todo,bool) {
+ func (m TodoSlice) FindByName(Name string) (Todo,bool) {
   for i, items := range s.items {
-    if item.[Name] == [Name] {
+    if item.Name == Name {
       return item, true
     }
   }
@@ -119,30 +119,30 @@ type MutexedTodoSlice struct {
 }
 
 
- func (m MutexedTodoSlice)  FindBy[Name](([Name] ))  (Todo,bool) {
+ func (m MutexedTodoSlice)  FindByName(Name string)  (Todo,bool) {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. FindBy[Name](([Name] ))
+  m.embed. FindByName(Name)
 }
- func (m MutexedTodoSlice)  Push((item Todo))  int {
+ func (m MutexedTodoSlice)  Push(item Todo)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. Push((item Todo))
+  m.embed. Push(item)
 }
- func (m MutexedTodoSlice)  Index((item Todo))  int {
+ func (m MutexedTodoSlice)  Index(item Todo)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. Index((item Todo))
+  m.embed. Index(item)
 }
- func (m MutexedTodoSlice)  RemoveAt((i index))  int {
+ func (m MutexedTodoSlice)  RemoveAt(i index)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. RemoveAt((i index))
+  m.embed. RemoveAt(i)
 }
- func (m MutexedTodoSlice)  Remove((item Todo))  int {
+ func (m MutexedTodoSlice)  Remove(item Todo)  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed. Remove((item Todo))
+  m.embed. Remove(item)
 }
 
 
