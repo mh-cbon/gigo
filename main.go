@@ -268,8 +268,6 @@ func InterpretFile(fileName string) (*glang.FileDecl, error) {
 
 func InterpretString(pkgName, content string) (*glang.StrDecl, error) {
 
-	// content = fmt.Sprintf("package %v\n\n%v", pkgName, content)
-
 	var buf bytes.Buffer
 	buf.WriteString(content)
 	reader := makeLexerReader(&buf)
