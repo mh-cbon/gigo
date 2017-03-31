@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 	"text/template"
 
 	genericinterperter "github.com/mh-cbon/gigo/interpreter/generic"
@@ -23,6 +24,29 @@ func main() {
 
 	fileName := "demo.gigo.go"
 	fileDef := MustInterpretFile(fileName)
+
+	allTplsFuncs := map[string]interface{}{
+		"joinexpr": func(glue string, tokens interface{}) string {
+			t := []genericinterperter.Tokener{}
+			switch yy := tokens.(type) {
+			case []genericinterperter.Tokener:
+				t = append(t, yy...)
+			case []*glang.PropDecl:
+				for _, xx := range yy {
+					t = append(t, xx)
+				}
+			case []*glang.IdentifierDecl:
+				for _, xx := range yy {
+					t = append(t, xx)
+				}
+			}
+			ret := []string{}
+			for _, xx := range t {
+				ret = append(ret, xx.String())
+			}
+			return strings.Join(ret, glue)
+		},
+	}
 
 	tplTypesFuncs := map[string]interface{}{}
 	outData := &Tomate{
@@ -157,10 +181,17 @@ func main() {
 	// do
 	//- create a template.Template of its string
 	//- create a template.Func of its mutation
+	funcsForTypesMutators := map[string]interface{}{}
+	for k, v := range tplTypesFuncs {
+		funcsForTypesMutators[k] = v
+	}
+	for k, v := range allTplsFuncs {
+		funcsForTypesMutators[k] = v
+	}
 	for _, i := range tplTypes {
 		outData.tplTypesMutators = append(outData.tplTypesMutators, &TypeMutator{
 			Decl:  i,
-			funcs: tplTypesFuncs,
+			funcs: funcsForTypesMutators,
 		})
 	}
 
@@ -177,7 +208,7 @@ func main() {
 	tplContent := fileDef.String()
 	// execute the modified file tree with a taylor made template context.
 
-	t := makeTplOfSource("gigo", tplContent, map[string]interface{}{})
+	t := makeTplOfSource("gigo", tplContent, allTplsFuncs)
 	err3 := t.Execute(os.Stdout, outData)
 	// err3 := t.Execute(ioutil.Discard, data)
 	if err3 != nil {
@@ -345,7 +376,11 @@ func (p *placeholderTypeMutation) getName() string {
 }
 func (p *placeholderTypeMutation) execute(mutators []*TypeMutator, data interface{}) (string, error) {
 	expr, err := p.mutation.mutate(mutators, data)
-	return expr.String(), err
+	res := ""
+	if expr != nil {
+		res = expr.String()
+	}
+	return res, err
 }
 
 func NewPlaceholderTypeMutation(name string, of *glang.ImplementDecl) *placeholderTypeMutation {
@@ -356,25 +391,6 @@ func NewPlaceholderTypeMutation(name string, of *glang.ImplementDecl) *placehold
 	}
 }
 
-func getTemplateStr(impl *glang.TemplateDecl) string {
-	tplContent := ""
-	// the template declares a type like this
-	// template XXXX struct{}
-	// it is needed to replace the template keyword by a type.
-	// => type XXXX struct{}
-	if y := impl.GetToken(glanglexer.TemplateToken); y != nil {
-		// y.SetType(glanglexer.TypeToken) // not needed to update
-		y.SetValue("type")
-	}
-	tplContent += impl.String()
-	for _, m := range impl.Methods {
-		tplContent += m.String()
-		if m.GetModifier() != nil { // test if there is a front modifier like <range $m :=...>
-			tplContent += "<:end:>" // close the template expression, quick and dirty, but just works :)
-		}
-	}
-	return tplContent
-}
 func makeTplOfSource(name, src string, funcs map[string]interface{}) *template.Template {
 	t, err := template.New(name).Funcs(funcs).Delims("<:", ":>").Parse(src)
 	if err != nil {
@@ -456,7 +472,7 @@ type ImplTypeMutation struct {
 
 func (t *ImplTypeMutation) getMutationFunc(m *TypeMutator) func(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
 	return func(origin *glang.StructDecl, args ...interface{}) (*glang.StructDecl, error) {
-		res, err := m.mutate(origin, args)
+		res, err := m.mutate(origin, args...)
 		if err == nil {
 			t.Res = append(t.Res, res)
 		}
