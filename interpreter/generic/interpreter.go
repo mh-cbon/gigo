@@ -103,20 +103,25 @@ func (I *Interpreter) PeekN(n int) []Tokener {
 }
 
 // Peek returns nil if the next token is not of type T.
-func (I *Interpreter) Peek(T lexer.TokenType) Tokener {
-	t := I.Next()
-	if t == nil {
-	} else if t.GetType() != T {
-		t = nil
+func (I *Interpreter) Peek(T ...lexer.TokenType) Tokener {
+	t := I.Read(T...)
+	if t != nil {
+		I.Rewind()
 	}
-	I.Rewind()
 	return t
 }
 
 // Read advances the position if next token is of type T.
-func (I *Interpreter) Read(T lexer.TokenType) Tokener {
+func (I *Interpreter) Read(Ts ...lexer.TokenType) Tokener {
 	t := I.Next()
-	if t == nil || t.GetType() != T {
+	found := false
+	for _, T := range Ts {
+		if !found && t != nil && t.GetType() == T {
+			found = true
+			break
+		}
+	}
+	if !found {
 		I.Rewind()
 		t = nil
 	}
