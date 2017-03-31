@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -251,15 +252,20 @@ func readFileByLine(filename string, fn func(line string)) error {
 	return err
 }
 
+var tplErrLine = regexp.MustCompile(`:([0-9]+):`)
+
 //NewStringTplSyntaxError creates a new syntax error for a template
-func NewStringTplSyntaxError(err error, name, tplContent string) *StringTplSyntaxError {
-	msg := strings.Split(err.Error(), ":")
-	line, err3 := strconv.Atoi(msg[2])
-	if err3 != nil {
-		panic(err3)
+func NewStringTplSyntaxError(from error, name, tplContent string) *StringTplSyntaxError {
+	msg := from.Error()
+	res := tplErrLine.FindAllStringSubmatch(msg, -1)
+	line := 0
+	if len(res) > 0 {
+		if x, err := strconv.Atoi(res[0][1]); err == nil {
+			line = x
+		}
 	}
 	return &StringTplSyntaxError{
-		SyntaxError: NewSyntaxError(err.Error(), line, -1),
+		SyntaxError: NewSyntaxError(msg, line, -1),
 		Name:        name,
 		Src:         tplContent,
 	}
