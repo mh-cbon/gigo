@@ -48,7 +48,7 @@ template <:.Name>Slice struct {
       return item, true
     }
   }
-  return {}<:$.Name>, false
+  return <:$.Name>{}, false
 }
 
 // create new Method Push of type .
