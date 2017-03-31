@@ -161,8 +161,8 @@ func (I *Interpreter) Get(T lexer.TokenType) Tokener {
 
 // GetMany reads tokens until it is not of types T and flushes the buffer.
 // bad idea ?
-func (I *Interpreter) GetMany(T lexer.TokenType) []Tokener {
-	ret := I.ReadMany(T)
+func (I *Interpreter) GetMany(T ...lexer.TokenType) []Tokener {
+	ret := I.ReadMany(T...)
 	I.Flush()
 	return ret
 }
