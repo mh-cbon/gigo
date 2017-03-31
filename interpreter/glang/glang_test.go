@@ -84,7 +84,7 @@ func TestOneFuncReceiver(t *testing.T) {
 
 func TestOneFuncRepeater(t *testing.T) {
 
-	str := `<whatever>func (r *Receiver<whatever>) tomate<whatever>() {
+	str := `<:whatever>func (r *Receiver<:whatever>) tomate<:whatever>() {
 
 		}`
 	d, err := interpretString("tomate", str)
@@ -100,7 +100,7 @@ func TestOneFuncRepeater(t *testing.T) {
 	}
 	fn := funcs[0]
 	sgot := fn.GetName()
-	swanted := " tomate<whatever>" // something to be adjusted here
+	swanted := " tomate<:whatever>" // something to be adjusted here
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -118,7 +118,7 @@ func TestOneFuncRepeater(t *testing.T) {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 	sgot = receiver.Type.String()
-	swanted = " *Receiver<whatever>" // something to be adjusted here
+	swanted = " *Receiver<:whatever>" // something to be adjusted here
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -219,9 +219,9 @@ func TestOneStructWithProps(t *testing.T) {
 
 func TestOneTemplate(t *testing.T) {
 
-	str := `template Mutexed<.Name> struct {
+	str := `template Mutexed<:.Name> struct {
 	  lock *sync.Mutex
-	  embed <.Name>
+	  embed <:.Name>
 	}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
@@ -237,7 +237,7 @@ func TestOneTemplate(t *testing.T) {
 
 	st := structs[0]
 	sgot := st.GetName()
-	swanted := "Mutexed<.Name>"
+	swanted := "Mutexed<:.Name>"
 	if swanted != sgot {
 		t.Errorf("unexpected struct name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -268,7 +268,7 @@ func TestOneTemplate(t *testing.T) {
 		t.Errorf("unexpected propB name wanted=%q, got=%q", swanted, sgot)
 	}
 	sgot = propB.Type.String()
-	swanted = " <.Name>"
+	swanted = " <:.Name>"
 	if swanted != sgot {
 		t.Errorf("unexpected propB value wanted=%q, got=%q", swanted, sgot)
 	}
@@ -328,7 +328,7 @@ func TestOneInterface(t *testing.T) {
 func TestOneImplements(t *testing.T) {
 
 	str := `
-	type Todos implements<Mutexed (Slice .Todo "Name")> {
+	type Todos implements<:Mutexed (Slice .Todo "Name")> {
 	  // it reads as a mutexed list of todo.
 	}`
 	d, err := interpretString("tomate", str)
@@ -351,7 +351,7 @@ func TestOneImplements(t *testing.T) {
 	}
 
 	sgot = impl.GetImplementTemplate()
-	swanted = `<Mutexed (Slice .Todo "Name")>`
+	swanted = `<:Mutexed (Slice .Todo "Name")>`
 	if swanted != sgot {
 		t.Errorf("unexpected impl mutator wanted=%q, got=%q", swanted, sgot)
 	}
@@ -360,30 +360,31 @@ func TestOneImplements(t *testing.T) {
 	// genericinterperter.Dump(d, 0)
 }
 
-func TestOnePackageDecl(t *testing.T) {
-
-	str := ``
-	d, err := interpretString("tomate", str)
-	if err != nil {
-		t.Error(err)
-	}
-
-	pkgs := d.FindPackagesDecl()
-	got := len(pkgs)
-	wanted := 1
-	if wanted != got {
-		t.Errorf("unexpected packages len wanted=%v, got=%v", wanted, got)
-	}
-
-	pkg := pkgs[0]
-	sgot := pkg.GetName()
-	swanted := "tomate"
-	if swanted != sgot {
-		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
-	}
-
-	// genericinterperter.Dump(d, 0)
-}
+//
+// func TestOnePackageDecl(t *testing.T) {
+//
+// 	str := ``
+// 	d, err := interpretString("tomate", str)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+//
+// 	pkgs := d.FindPackagesDecl()
+// 	got := len(pkgs)
+// 	wanted := 1
+// 	if wanted != got {
+// 		t.Errorf("unexpected packages len wanted=%v, got=%v", wanted, got)
+// 	}
+//
+// 	pkg := pkgs[0]
+// 	sgot := pkg.GetName()
+// 	swanted := "tomate"
+// 	if swanted != sgot {
+// 		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+// 	}
+//
+// 	// genericinterperter.Dump(d, 0)
+// }
 
 func interpretString(pkgName, content string) (*glang.StrDecl, error) {
 

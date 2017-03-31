@@ -159,7 +159,7 @@ func (I *GigoInterpreter) Process(
 			}
 			I.Scope.AddExpr(tplDecl)
 
-		} else if tok := I.Peek(glanglexer.SmallerToken); tok != nil {
+		} else if tok := I.Peek(glanglexer.TplOpenToken); tok != nil {
 
 			// fn := &glang.TemplateFuncDecl{}
 			fn := glang.NewTemplateFuncDecl(tok)
@@ -172,7 +172,8 @@ func (I *GigoInterpreter) Process(
 				genericlexer.WsToken)
 			fn.AddExprs(I.Emit())
 
-			block, err := I.ReadBodyBlock(glanglexer.SmallerToken, glanglexer.GreaterToken)
+			// smthig to improve here
+			block, err := I.ReadBodyBlock(glanglexer.TplOpenToken, glanglexer.GreaterToken)
 			if err != nil {
 				return err
 			}
@@ -181,13 +182,13 @@ func (I *GigoInterpreter) Process(
 			block.AddExprs(I.Emit())
 			fn.Modifier = block
 			fn.AddExpr(block)
+
 			I.ReadMany(genericlexer.WsToken)
 			fn.AddExprs(I.Emit())
 
 			nFunc, err := I.ReadFuncDecl(true)
 			if err != nil {
-				panic(err)
-				// return nil, err
+				return err
 			}
 			fn.Func = nFunc
 			fn.AddExpr(fn.Func)
@@ -970,7 +971,7 @@ func (I *GigoInterpreter) ReadIdentifierDecl(templated bool) (*glang.IdentifierD
 	if templated == false {
 		f = I.Read(genericlexer.WordToken)
 		if f == nil {
-			return nil, nil
+			return nil, I.Debug("unexpected token", genericlexer.WordToken)
 		}
 	} else {
 		for {
@@ -979,12 +980,12 @@ func (I *GigoInterpreter) ReadIdentifierDecl(templated bool) (*glang.IdentifierD
 				if f == nil {
 					f = p
 				}
-			} else if p := I.Peek(glanglexer.SmallerToken); p != nil {
+			} else if p := I.Peek(glanglexer.TplOpenToken); p != nil {
 				//ok
 				if f == nil {
 					f = p
 				}
-				block, err := I.ReadBodyBlock(glanglexer.SmallerToken, glanglexer.GreaterToken)
+				block, err := I.ReadBodyBlock(glanglexer.TplOpenToken, glanglexer.GreaterToken)
 				if err != nil {
 					panic(err)
 					return ret, err // ?
@@ -1007,6 +1008,8 @@ func (I *GigoInterpreter) ReadIdentifierDecl(templated bool) (*glang.IdentifierD
 			ret = glang.NewIdentifierDecl(f)
 		}
 		ret.AddExprs(I.Emit())
+	} else {
+		return nil, I.Debug("unexpected token", genericlexer.WordToken, glanglexer.TplOpenToken)
 	}
 	return ret, nil
 }
@@ -1050,7 +1053,7 @@ func (I *GigoInterpreter) ReadImplDecl() (*glang.ImplementDecl, error) {
 	I.ReadMany(genericlexer.WsToken)
 	ret.AddExprs(I.Emit())
 
-	implTemplate, err := I.ReadBodyBlock(glanglexer.SmallerToken, glanglexer.GreaterToken)
+	implTemplate, err := I.ReadBodyBlock(glanglexer.TplOpenToken, glanglexer.GreaterToken)
 	if err != nil {
 		return nil, err
 	}
