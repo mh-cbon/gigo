@@ -346,6 +346,12 @@ func (t *TemplateFuncDecl) GetBody() *BodyBlockDecl {
 func (t *TemplateFuncDecl) GetArgs() *PropsBlockDecl {
 	return t.Func.GetArgs()
 }
+func (t *TemplateFuncDecl) GetArgsBlock() []*PropDecl {
+	return t.Func.GetArgsBlock()
+}
+func (t *TemplateFuncDecl) GetArgsNames() []*IdentifierDecl {
+	return t.Func.GetArgsNames()
+}
 
 type FuncDeclarer interface {
 	genericinterperter.Expressioner
@@ -360,6 +366,8 @@ type FuncDeclarer interface {
 	GetBody() *BodyBlockDecl
 	GetArgs() *PropsBlockDecl
 	GetPos() genericinterperter.TokenPos
+	GetArgsBlock() []*PropDecl
+	GetArgsNames() []*IdentifierDecl
 }
 
 type FuncDecl struct {
@@ -374,6 +382,16 @@ type FuncDecl struct {
 
 func (p *FuncDecl) GetArgs() *PropsBlockDecl {
 	return p.Params
+}
+func (p *FuncDecl) GetArgsBlock() []*PropDecl {
+	return p.Params.Props
+}
+func (p *FuncDecl) GetArgsNames() []*IdentifierDecl {
+	ret := []*IdentifierDecl{}
+	for _, p := range p.Params.Props {
+		ret = append(ret, p.Name)
+	}
+	return ret
 }
 func (p *FuncDecl) GetBody() *BodyBlockDecl {
 	return p.Body
