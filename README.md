@@ -9,7 +9,7 @@ type Todo struct {
   Done bool
 }
 
-type Todos implements<Mutexed (Slice .Todo "Name")> {
+type Todos implements<:Mutexed (Slice .Todo "Name")> {
   // it reads as a mutexed list of todo,
   // where Name is an additionnal arg to define a FindByName method.
 }
@@ -17,36 +17,36 @@ type Todos implements<Mutexed (Slice .Todo "Name")> {
 func (t *Todos) Hello(){fmt.Println("Hello")}
 
 
-template Mutexed<.Name> struct {
+template Mutexed<:.Name> struct {
   lock *sync.Mutex
-  embed <.Name>
+  embed <:.Name>
 }
 
-<range $m := .Methods> func (m Mutexed<$.Name>) <$m.Name>(<$m.Params>) <$m.Out> {
+<:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.Params>) <:$m.Out> {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed.<:$m.GetName>(<:$m.Args>)
 }
 
-template <.Name>Slice struct {
-  items []<.Name>
+template <:.Name>Slice struct {
+  items []<:.Name>
 }
 
-<range $a := .Args> func (m <$.Name>Slice) FindBy<$a>(<$a> <$.ArgType $a>) (<$.Name>,bool) {
+<:range $a := .Args> func (m <:$.Name>Slice) FindBy<:$a>(<:$a> <:$.ArgType $a>) (<:$.Name>,bool) {
   for i, items := range s.items {
-    if item.<$a> == <$a> {
+    if item.<:$a> == <:$a> {
       return item, true
     }
   }
-  return {}<$.Name>, false
+  return {}<:$.Name>, false
 }
 
-func (s <.Name>Slice) Push(item <.Name>) int {
+func (s <:.Name>Slice) Push(item <:.Name>) int {
   s.items = append(s.items, item)
   return len(s.items)
 }
 
-func (s <.Name>Slice) Index(item <.Name>) int {
+func (s <:.Name>Slice) Index(item <:.Name>) int {
   for i, items := range s.items {
     if item == search {
       return i
@@ -55,11 +55,11 @@ func (s <.Name>Slice) Index(item <.Name>) int {
   return -1
 }
 
-func (s <.Name>Slice) RemoveAt(i index) int {
+func (s <:.Name>Slice) RemoveAt(i index) int {
 	s.items = append(s.items[:i], s.items[i+1:]...)
 }
 
-func (s <.Name>Slice) Remove(item <.Name>) int {
+func (s <:.Name>Slice) Remove(item <:.Name>) int {
   if i:= s.Index(item); i > -1 {
     s.RemoveAt(i)
     return i
@@ -77,23 +77,24 @@ type Todo struct {
   Done bool
 }
 
-
 type TodoSlice struct {
   items []Todo
+}
+
+
+ func (m TodoSlice) FindBy[Name]([Name] ) (Todo,bool) {
+  for i, items := range s.items {
+    if item.[Name] == [Name] {
+      return item, true
+    }
+  }
+  return {}Todo, false
 }
 
 
 func (s TodoSlice) Push(item Todo) int {
   s.items = append(s.items, item)
   return len(s.items)
-}
- func (m TodoSlice) FindByName(Name string) (Todo,bool) {
-  for i, items := range s.items {
-    if item.<$a> == <$a> {
-      return item, true
-    }
-  }
-  return {}<$.Name>, false
 }
 
 
@@ -113,14 +114,14 @@ func (s TodoSlice) RemoveAt(i index) int {
 
 
 func (s TodoSlice) Remove(item Todo) int {
-  if i:= s.Index(item); i > -1 {
+  if i:= s.Index(item); i :> -1 {
     s.RemoveAt(i)
     return i
   }
   return -1
 }
-// while this is compatible with its local contracts,
-// it will work and still takes advantages of concrete types exported by consumed package.
+// the programmer fixed a tricky problem
+// in a glance!
 
 type MutexedTodoSlice struct {
   lock *sync.Mutex
@@ -128,30 +129,30 @@ type MutexedTodoSlice struct {
 }
 
 
- func (m MutexedTodoSlice)  FindByName((Name string))  (Todo,bool) {
+ func (m MutexedTodoSlice)  FindBy[Name](([Name] ))  (Todo,bool) {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. FindBy[Name](([Name] ))
 }
  func (m MutexedTodoSlice)  Push((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. Push((item Todo))
 }
  func (m MutexedTodoSlice)  Index((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. Index((item Todo))
 }
  func (m MutexedTodoSlice)  RemoveAt((i index))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. RemoveAt((i index))
 }
  func (m MutexedTodoSlice)  Remove((item Todo))  int {
   lock.Lock()
   defer lock.Unlock()
-  m.embed.<$m.GetName>(<$m.Args>)
+  m.embed. Remove((item Todo))
 }
 
 
@@ -161,8 +162,6 @@ type Todos struct {
 }
 
 func (t *Todos) Hello(){fmt.Println("Hello")}
-
-
 ```
 
 Still some work to be done, but you got the idea!
