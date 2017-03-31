@@ -432,7 +432,8 @@ func TestOneImplements(t *testing.T) {
 func TestOnePackageDecl(t *testing.T) {
 
 	str := ``
-	d, err := interpretString("tomate", str)
+	str = fmt.Sprintf("package %v\n\n%v", "tomate", str)
+	d, err := interpretStringWithPkgDecl("tomate", str)
 	if err != nil {
 		t.Errorf("%#v\n", err)
 	}
@@ -454,9 +455,25 @@ func TestOnePackageDecl(t *testing.T) {
 	// genericinterperter.Dump(d, 0)
 }
 
-func interpretString(pkgName, content string) (*glang.StrDecl, error) {
+func TestNoPackageDecl(t *testing.T) {
 
-	content = fmt.Sprintf("package %v\n\n%v", pkgName, content)
+	str := ``
+	d, err := interpretString("tomate", str)
+	if err != nil {
+		t.Errorf("%#v\n", err)
+	}
+
+	pkgs := d.FindPackagesDecl()
+	got := len(pkgs)
+	wanted := 0
+	if wanted != got {
+		t.Errorf("unexpected packages len wanted=%v, got=%v", wanted, got)
+	}
+
+	// genericinterperter.Dump(d, 0)
+}
+
+func interpretString(pkgName, content string) (*glang.StrDecl, error) {
 
 	var buf bytes.Buffer
 	buf.WriteString(content)
@@ -465,6 +482,17 @@ func interpretString(pkgName, content string) (*glang.StrDecl, error) {
 
 	interpret := NewGigoInterpreter()
 	return interpret.ProcessStr(content, reader)
+}
+
+func interpretStringWithPkgDecl(pkgName, content string) (*glang.StrDecl, error) {
+
+	var buf bytes.Buffer
+	buf.WriteString(content)
+	reader := makeLexerReader(&buf)
+	//reader = prettyPrinterLexer(reader)
+
+	interpret := NewGigoInterpreter()
+	return interpret.ProcessStrWithPkgDecl(content, reader)
 }
 
 func makeLexerReader(r io.Reader) func() genericinterperter.Tokener {

@@ -45,30 +45,44 @@ func (I *GigoInterpreter) getTokens(reader genericinterperter.TokenerReader) []g
 func (I *GigoInterpreter) ProcessFile(file string, reader genericinterperter.TokenerReader) (*glang.FileDecl, error) {
 	fileDef := &glang.FileDecl{Name: file}
 
-	tokens := I.getTokens(reader)
+	I.Tokens = I.getTokens(reader)
+	I.Scope = fileDef
 
-	return fileDef, I.Process(fileDef, tokens)
+	return fileDef, I.Process(true)
 }
 
 // ProcessStr processes given reader of tokens of the content string.
 func (I *GigoInterpreter) ProcessStr(content string, reader genericinterperter.TokenerReader) (*glang.StrDecl, error) {
 	strDef := &glang.StrDecl{Src: content}
 
-	tokens := I.getTokens(reader)
+	I.Tokens = I.getTokens(reader)
+	I.Scope = strDef
 
-	return strDef, I.Process(strDef, tokens)
+	return strDef, I.Process(false)
+}
+
+// ProcessStrWithPkgDecl processes given reader of tokens of the content string. It expects to have package decl.
+func (I *GigoInterpreter) ProcessStrWithPkgDecl(content string, reader genericinterperter.TokenerReader) (*glang.StrDecl, error) {
+	strDef := &glang.StrDecl{Src: content}
+
+	I.Tokens = I.getTokens(reader)
+	I.Scope = strDef
+
+	return strDef, I.Process(true)
 }
 
 // Process given tokens in the given scope.
 // a scope can be a file or a string.
-func (I *GigoInterpreter) Process(
-	scope glang.ScopeReceiver,
-	tokens []genericinterperter.Tokener) error {
+func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 
-	I.Tokens = tokens
-	I.Scope = scope
-
-	I.MustDoPackageDecl()
+	if withpkgdcl {
+		pkgDecl, err := I.ReadPackageDecl()
+		if err != nil {
+			return err
+		}
+		I.Scope.AddExpr(pkgDecl)
+		// I.packages.AddToPackage(decl.GetName(), I.Scope.(glang.ScopeReceiver))
+	}
 
 	for {
 		if I.Ended() {
@@ -238,12 +252,12 @@ func (I *GigoInterpreter) Process(
 	return nil
 }
 
-// MustDoPackageDecl reads the tokens until it finds a package token.
+// ReadPackageDecl reads the tokens until it finds a package token.
 // returns an error if none is found.
 // It creates a new package declaration, attach it to the scope,
 // use its name to add/get a package in the current program
 // and attach the current scope to it.
-func (I *GigoInterpreter) MustDoPackageDecl() error {
+func (I *GigoInterpreter) ReadPackageDecl() (*glang.PackageDecl, error) {
 
 	for I.Peek(glanglexer.PackageToken) == nil {
 		I.ReadMany(
@@ -253,24 +267,24 @@ func (I *GigoInterpreter) MustDoPackageDecl() error {
 			genericlexer.WsToken)
 	}
 
-	if tok := I.Read(glanglexer.PackageToken); tok != nil {
-		decl := glang.NewPackageDecl(tok)
-		decl.AddExprs(I.Emit())
-		I.Scope.AddExpr(decl)
-		decl.AddExprs(I.GetMany(genericlexer.WsToken))
-		if name := I.Get(genericlexer.WordToken); name != nil {
-			decl.Name = name
-			decl.AddExpr(name)
-			decl.AddExprs(I.GetMany(genericlexer.WsToken))
-			decl.AddExprs(I.GetMany(glanglexer.NlToken))
-			I.packages.AddToPackage(decl.GetName(), I.Scope.(glang.ScopeReceiver))
-		} else {
-			return I.Debug("missing package decl", genericlexer.WordToken)
-		}
-	} else {
-		return I.Debug("missing package decl", glanglexer.PackageToken)
+	tok := I.Read(glanglexer.PackageToken)
+	if tok == nil {
+		return nil, I.Debug("missing package decl", glanglexer.PackageToken)
 	}
-	return nil
+
+	decl := glang.NewPackageDecl(tok)
+	decl.AddExprs(I.Emit())
+	decl.AddExprs(I.GetMany(genericlexer.WsToken))
+
+	name := I.Get(genericlexer.WordToken)
+	if name == nil {
+		return nil, I.Debug("missing package name", genericlexer.WordToken)
+	}
+	decl.Name = name
+	decl.AddExpr(name)
+	decl.AddExprs(I.GetMany(genericlexer.WsToken, glanglexer.NlToken))
+
+	return decl, nil
 }
 
 // KeepPreviousComment unreads the tokens appropriately (almost)
