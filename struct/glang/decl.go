@@ -1,6 +1,7 @@
 package glang
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -299,6 +300,27 @@ func NewImplementDecl(t genericinterperter.Tokener) *ImplementDecl {
 	}
 }
 
+type PoireauDecl struct {
+	genericinterperter.Tokener
+	genericinterperter.Expression
+	ImplementTemplate *IdentifierDecl
+}
+
+func (p *PoireauDecl) String() string {
+	return p.Expression.String()
+}
+func (p *PoireauDecl) IsPointer() bool {
+	return p.Tokener.GetType() == glanglexer.PoireauPointerToken
+}
+func (p *PoireauDecl) GetImplementTemplate() string {
+	return p.ImplementTemplate.String()
+}
+func NewPoireauDecl(t genericinterperter.Tokener) *PoireauDecl {
+	return &PoireauDecl{
+		Tokener: t,
+	}
+}
+
 type TemplateFuncDecl struct {
 	genericinterperter.Tokener
 	genericinterperter.Expression
@@ -450,6 +472,7 @@ func NewSignsBlockDecl(t genericinterperter.Tokener) *SignsBlockDecl {
 type PropsBlockDecl struct {
 	genericinterperter.Tokener
 	genericinterperter.Expression
+	Poireaux   []*PoireauDecl
 	Underlying []*IdentifierDecl
 	Props      []*PropDecl
 }
@@ -460,6 +483,10 @@ func (p *PropsBlockDecl) String() string {
 func (p *PropsBlockDecl) AddUnderlying(Type *IdentifierDecl) {
 	p.Underlying = append(p.Underlying, Type)
 	p.Expression.AddExpr(Type)
+}
+func (p *PropsBlockDecl) AddPoireau(Mutation *PoireauDecl) {
+	p.Poireaux = append(p.Poireaux, Mutation)
+	p.Expression.AddExpr(Mutation)
 }
 func (p *PropsBlockDecl) Add(Name *IdentifierDecl, Type *IdentifierDecl) *PropDecl {
 	prop := NewPropDecl(Name)
@@ -563,6 +590,11 @@ type IdentifierDecl struct {
 }
 
 var re = regexp.MustCompile("(<[^>]+>)")
+
+func (p *IdentifierDecl) IsImplement() bool {
+	fmt.Printf("%#v\n", p.Tokener)
+	return p.Tokener.GetType() == glanglexer.PoireauToken || p.Tokener.GetType() == glanglexer.PoireauPointerToken
+}
 
 func (p *IdentifierDecl) GetSlugName() string {
 	s := p.Expression.String()

@@ -1,8 +1,22 @@
-# gigo
+gigo
 
-go generate on steroids, in input it takes
+[![travis Status](https://travis-ci.org/mh-cbon/gigo.svg?branch=master)](https://travis-ci.org/mh-cbon/gigo)[![appveyor Status](https://ci.appveyor.com/api/projects/status/github/mh-cbon/gigo?branch=master&svg=true)](https://ci.appveyor.com/project/mh-cbon/gigo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mh-cbon/gigo)](https://goreportcard.com/report/github.com/mh-cbon/gigo)
 
+[![GoDoc](https://godoc.org/github.com/mh-cbon/gigo?status.svg)](http://godoc.org/github.com/mh-cbon/gigo)
+
+
+go generate super charged on steroids
+
+
+## Example
+
+in input it takes
+
+
+###### > demo.gigo.go
 ```go
+package main
 
 type Todo struct {
   Name string
@@ -10,27 +24,42 @@ type Todo struct {
 }
 
 type Todos implements<:Mutexed (Slice .Todo "Name")> {
-  // it reads as a mutexed list of todo,
-  // where Name is an additionnal arg to define a FindByName method.
+  // it reads as a mutexed list of todo.
 }
 
 func (t *Todos) Hello(){fmt.Println("Hello")}
 
+// type Todos implements<Mutexed (Slice .Todo)>
+// type Todos implements<.Todo | Slice | Mutexed>
+//-
+// It should probably be something like this in real apps
+// type Todos implements<Slice .Todo>
+// type TodosManager struct {Items Todos}
+// type MutexedTodosManager implements<Mutexed .TodosManager>
+
+
+// a template to mutex .
 template Mutexed<:.Name> struct {
   lock *sync.Mutex
+  // embed the type
   embed <:.Name>
 }
 
+// for every method of ., create a new method of Mutexed
 <:range $m := .Methods> func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out> {
+  // lock them all
   lock.Lock()
   defer lock.Unlock()
+  // invoke embedded type
   m.embed.<:$m.GetName>(<:$m.GetArgsNames | joinexpr ",">)
 }
 
+// a template to generate a type Slice of .
 template <:.Name>Slice struct {
   items []<:.Name>
 }
 
+// range over args to produce new FindBy methods
 <:range $a := .Args> func (m <:$.Name>Slice) FindBy<:$a>(<:$a> <:$.ArgType $a>) (<:$.Name>,bool) {
   for i, items := range s.items {
     if item.<:$a> == <:$a> {
@@ -40,6 +69,7 @@ template <:.Name>Slice struct {
   return {}<:$.Name>, false
 }
 
+// create new Method Push of type .
 func (s <:.Name>Slice) Push(item <:.Name>) int {
   s.items = append(s.items, item)
   return len(s.items)
@@ -67,20 +97,23 @@ func (s <:.Name>Slice) Remove(item <:.Name>) int {
 }
 ```
 
+
 It produces
 
-```go
+
+###### $ go run main.go
+```sh
+package main
 
 type Todo struct {
   Name string
   Done bool
-}
-
+}// a template to generate a type Slice of .
 type TodoSlice struct {
   items []Todo
 }
 
-
+// range over args to produce new FindBy methods
  func (m TodoSlice) FindByName(Name string) (Todo,bool) {
   for i, items := range s.items {
     if item.Name == Name {
@@ -90,7 +123,7 @@ type TodoSlice struct {
   return {}Todo, false
 }
 
-
+// create new Method Push of type .
 func (s TodoSlice) Push(item Todo) int {
   s.items = append(s.items, item)
   return len(s.items)
@@ -119,38 +152,48 @@ func (s TodoSlice) Remove(item Todo) int {
   }
   return -1
 }
-// the programmer fixed a tricky problem
-// in a glance!
 
+// a template to mutex .
 type MutexedTodoSlice struct {
   lock *sync.Mutex
+  // embed the type
   embed TodoSlice
 }
 
-
+// for every method of ., create a new method of Mutexed
  func (m MutexedTodoSlice)  FindByName(Name string)  (Todo,bool) {
+  // lock them all
   lock.Lock()
   defer lock.Unlock()
+  // invoke embedded type
   m.embed. FindByName(Name)
 }
  func (m MutexedTodoSlice)  Push(item Todo)  int {
+  // lock them all
   lock.Lock()
   defer lock.Unlock()
+  // invoke embedded type
   m.embed. Push(item)
 }
  func (m MutexedTodoSlice)  Index(item Todo)  int {
+  // lock them all
   lock.Lock()
   defer lock.Unlock()
+  // invoke embedded type
   m.embed. Index(item)
 }
  func (m MutexedTodoSlice)  RemoveAt(i index)  int {
+  // lock them all
   lock.Lock()
   defer lock.Unlock()
+  // invoke embedded type
   m.embed. RemoveAt(i)
 }
  func (m MutexedTodoSlice)  Remove(item Todo)  int {
+  // lock them all
   lock.Lock()
   defer lock.Unlock()
+  // invoke embedded type
   m.embed. Remove(item)
 }
 

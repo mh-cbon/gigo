@@ -19,7 +19,7 @@ func TestOneFunc(t *testing.T) {
 		}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 	funcs := d.FindFuncs()
 
@@ -45,7 +45,7 @@ func TestOneFuncReceiver(t *testing.T) {
 		}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 	funcs := d.FindFuncs()
 
@@ -89,7 +89,7 @@ func TestOneFuncRepeater(t *testing.T) {
 		}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 	funcs := d.FindTemplateFuncs()
 
@@ -131,7 +131,7 @@ func TestOneStruct(t *testing.T) {
 	str := `type tomate struct {}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 	structs := d.FindStructsTypes()
 
@@ -145,6 +145,75 @@ func TestOneStruct(t *testing.T) {
 	swanted := "tomate"
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// genericinterperter.Dump(d, 0)
+}
+
+func TestOneStructTemplate(t *testing.T) {
+
+	str := `type tomate struct {
+		poireau<:Slice(.Todo)>
+		*poireau<:Mutexed .>
+}`
+	d, err := interpretString("tomate", str)
+	if err != nil {
+		t.Errorf("%#v\n", err)
+	}
+
+	structs := d.FindStructsTypes()
+	got := len(structs)
+	wanted := 1
+	if wanted != got {
+		t.Errorf("unexpected func len wanted=%v, got=%v", wanted, got)
+	}
+
+	st := structs[0]
+	sgot := st.GetName()
+	swanted := "tomate"
+	if swanted != sgot {
+		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
+	}
+
+	poireaux := st.Block.Poireaux
+	got = len(poireaux)
+	wanted = 2
+	if wanted != got {
+		t.Errorf("unexpected poireaux len wanted=%v, got=%v", wanted, got)
+	}
+
+	poireau0 := poireaux[0]
+	sgot = poireau0.String()
+	swanted = "poireau<:Slice(.Todo)>"
+	if swanted != sgot {
+		t.Errorf("unexpected poireau0 mutation wanted=%v, got=%v", swanted, sgot)
+	}
+	sgot = poireau0.GetImplementTemplate()
+	swanted = "poireau<:Slice(.Todo)>"
+	if swanted != sgot {
+		t.Errorf("unexpected poireau0 mutation wanted=%v, got=%v", swanted, sgot)
+	}
+	bgot := poireau0.IsPointer()
+	bwanted := false
+	if bwanted != bgot {
+		t.Errorf("unexpected poireau0 out wanted=%v, got=%v", bwanted, bgot)
+	}
+
+	poireau1 := poireaux[1]
+	sgot = poireau1.String()
+	swanted = "*poireau<:Mutexed .>"
+	if swanted != sgot {
+		t.Errorf("unexpected poireau1 mutation wanted=%v, got=%v", swanted, sgot)
+	}
+	sgot = poireau1.GetImplementTemplate()
+	swanted = "*poireau<:Mutexed .>"
+	if swanted != sgot {
+		t.Errorf("unexpected poireau1 mutation wanted=%v, got=%v", swanted, sgot)
+	}
+	bgot = poireau1.IsPointer()
+	bwanted = true
+	if bwanted != bgot {
+		t.Errorf("unexpected poireau1 out wanted=%v, got=%v", bwanted, bgot)
 	}
 
 	// genericinterperter.Dump(d, 0)
@@ -167,7 +236,7 @@ func TestOneStructWithProps(t *testing.T) {
 	}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 
 	structs := d.FindStructsTypes()
@@ -225,7 +294,7 @@ func TestOneTemplate(t *testing.T) {
 	}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 
 	structs := d.FindTemplatesTypes()
@@ -283,7 +352,7 @@ func TestOneInterface(t *testing.T) {
 	}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 
 	infs := d.FindInterfaces()
@@ -333,7 +402,7 @@ func TestOneImplements(t *testing.T) {
 	}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 
 	impls := d.FindImplementsTypes()
@@ -365,7 +434,7 @@ func TestOnePackageDecl(t *testing.T) {
 	str := ``
 	d, err := interpretString("tomate", str)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("%#v\n", err)
 	}
 
 	pkgs := d.FindPackagesDecl()

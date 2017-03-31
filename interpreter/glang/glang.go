@@ -346,20 +346,29 @@ func (I *GigoInterpreter) ReadPropsBlock(
 
 			ret.AddExprs(I.Emit())
 
-			ID, err := I.ReadIdentifierDecl(templated)
-			if err != nil {
-				return nil, err
-			}
-
-			I.ReadMany(genericlexer.WsToken)
-			IDType, err := I.ReadIdentifierDecl(templated)
-			if IDType == nil {
-				ret.AddUnderlying(ID)
-			} else {
+			if I.Peek(glanglexer.PoireauPointerToken) != nil || I.Peek(glanglexer.PoireauToken) != nil {
+				Poireau, err := I.ReadPoireauDecl()
 				if err != nil {
 					return nil, err
 				}
-				ret.Add(ID, IDType)
+				ret.AddPoireau(Poireau)
+
+			} else {
+				ID, err := I.ReadIdentifierDecl(templated)
+				if err != nil {
+					return nil, err
+				}
+
+				I.ReadMany(genericlexer.WsToken)
+				IDType, err := I.ReadIdentifierDecl(templated)
+				if IDType == nil {
+					ret.AddUnderlying(ID)
+				} else {
+					if err != nil {
+						return nil, err
+					}
+					ret.Add(ID, IDType)
+				}
 			}
 
 		}
@@ -783,7 +792,7 @@ func (I *GigoInterpreter) ReadStructDecl(templated bool) (*glang.StructDecl, err
 	ret := glang.NewStructDecl(structTok)
 	ret.AddExprs(I.Emit())
 
-	block, err := I.ReadPropsBlock(templated, glanglexer.BracketOpenToken, glanglexer.BracketCloseToken)
+	block, err := I.ReadPropsBlock(true, glanglexer.BracketOpenToken, glanglexer.BracketCloseToken)
 	if block != nil {
 		if err != nil {
 			return nil, err
@@ -987,8 +996,7 @@ func (I *GigoInterpreter) ReadIdentifierDecl(templated bool) (*glang.IdentifierD
 				}
 				block, err := I.ReadBodyBlock(glanglexer.TplOpenToken, glanglexer.GreaterToken)
 				if err != nil {
-					panic(err)
-					return ret, err // ?
+					return nil, err
 				}
 				block.AddExprs(I.Emit())
 				block.Open.SetType(glanglexer.TplOpenToken)
@@ -1011,6 +1019,31 @@ func (I *GigoInterpreter) ReadIdentifierDecl(templated bool) (*glang.IdentifierD
 	} else {
 		return nil, I.Debug("unexpected token", genericlexer.WordToken, glanglexer.TplOpenToken)
 	}
+	return ret, nil
+}
+
+// ReadPoireauDecl reads a poireau<M()> declaration.
+// the next token must be a PoireauToken | PoireauPointerToken.
+// returns an error if none is found.
+// PoireauToken:
+//	- poireau<Mutator>
+//	- *poireau<Mutator>
+func (I *GigoInterpreter) ReadPoireauDecl() (*glang.PoireauDecl, error) {
+	var ret *glang.PoireauDecl
+	tok := I.Read(glanglexer.PoireauToken, glanglexer.PoireauPointerToken)
+	if tok == nil {
+		return nil, I.Debug("unexpected token", glanglexer.PoireauToken, glanglexer.PoireauPointerToken)
+	}
+
+	ID, err := I.ReadIdentifierDecl(true)
+	if err != nil {
+		return nil, err
+	}
+	ret = glang.NewPoireauDecl(tok)
+	ret.ImplementTemplate = ID
+	ret.AddExpr(ID)
+	ret.AddExprs(I.Emit())
+
 	return ret, nil
 }
 

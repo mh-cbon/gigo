@@ -1,0 +1,120 @@
+package main
+
+// other ideas
+
+// trait ?
+
+// type Formatter interface{
+//   Format(f State, c rune)
+// }
+
+/*
+*/
+template Dumper trait {
+}
+func (s Dumper) Format(f State, c rune)  {
+  <range $p := $.Props>
+    <.Name>
+  <end>
+  io.WriteString(os.Stdout, "build a pretty printed string of s")
+}
+
+type PrettyTodos implements<Dumper .Todo>
+
+type MyType implements<Mutexed (Slice .PrettyTodos "Name")> {
+}
+
+// <:if modifier>
+/*
+*/
+<:if .Implements fmt.Stringer> func (s <:.Name>Slice) Something(item <:.Name>) string {
+  return ""
+}
+<:else if .Implements fmt.Whatever> func (s <:.Name>Slice) Something(item <:.Name>) string {
+  return "somehow different"
+}
+
+/*
+*/
+// define a template func
+<define> func nameInTemplate(a astThing, w out, args ...string)error {
+
+}
+
+// define new keywords
+// - to open a resource
+f, err := open os.Open(...)
+// translate to
+f, err := os.Open(...)
+defer f.Close()
+// - must keyword
+f := must open os.Open(...)
+// translate to
+f, err := os.Open(...)
+if err != nil {
+  ... // this depends of the context,
+  // if the method does not return arguments => panic
+  // if the method returns arguments => return ...
+}
+defer f.Close()
+
+// - the ... keyword in return ...err
+// where it declares default value for
+// out values with ..., insert provided err appropriately
+func p() (int, bool, *A, B){
+  return ...
+}
+// translate to
+func p() (int, bool, *A, B){
+  return 0, false, nil, B{}
+}
+
+// - the or keyword in must call() or smting
+f := must os.Open(...) or panic
+// translate to
+f, err := os.Open(...)
+if err != nil {
+  panic(err)
+}
+//-
+f, err := must os.Open(...) or return ...err
+// translate to
+f, err := os.Open(...)
+if err != nil {
+  return err
+}
+//- going further
+f, err := must open os.Open(...) or
+  return ...log.log("file", "open", err)
+
+// translate to
+f, err := os.Open(...)
+if err != nil {
+  return log.log("file", "open", err)
+}
+defer f.Close()
+
+// - interface combiner
+func p(value SomePusher+Committer) {}
+
+// which would translate into a new interface declaration such as
+type genXXXer interface {
+  SomePusher
+  Committer
+}
+// and translate the func signature to
+func p(value genXXXer) {}
+
+// - const name
+const (
+	numberToken lexer.TokenType = iota
+	wsToken
+)
+var xName = constname(numberToken)
+
+// translate to
+const (
+	numberToken lexer.TokenType = iota
+	wsToken
+)
+var xName = "numberToken"

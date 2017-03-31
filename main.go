@@ -1,3 +1,4 @@
+// go generate super charged on steroids
 package main
 
 import (

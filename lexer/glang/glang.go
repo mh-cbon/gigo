@@ -52,6 +52,9 @@ const (
 	ElipseToken
 	TplOpenToken
 	TplCloseToken
+
+	PoireauToken
+	PoireauPointerToken
 )
 
 // TokenName Helper function
@@ -140,6 +143,10 @@ func TokenType(Type lexer.TokenType) string {
 		return "TplOpenToken"
 	case TplCloseToken:
 		return "TplCloseToken"
+	case PoireauToken:
+		return "PoireauToken"
+	case PoireauPointerToken:
+		return "PoireauPointerToken"
 	}
 	return "token unknown"
 }
@@ -192,6 +199,8 @@ func New() *generic.Lexer {
 			generic.Word{Value: "constname", Type: ConstNameToken},
 			generic.Word{Value: "interface", Type: InterfaceToken},
 			generic.Word{Value: "implements", Type: ImplementsToken},
+			generic.Word{Value: "poireau", Type: PoireauToken},
+			generic.Word{Value: "*poireau", Type: PoireauPointerToken},
 		},
 	}
 }
