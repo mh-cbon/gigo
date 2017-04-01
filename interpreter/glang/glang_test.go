@@ -15,8 +15,9 @@ import (
 func TestOneFunc(t *testing.T) {
 
 	str := `func tomate() {
-
-		}`
+		var expr string = "some"
+		expr2 := "other"
+}`
 	d, err := interpretString("tomate", str)
 	if err != nil {
 		t.Errorf("%#v\n", err)
@@ -35,7 +36,6 @@ func TestOneFunc(t *testing.T) {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 
-	// genericinterperter.Dump(d, 0)
 }
 
 func TestOneFuncReceiver(t *testing.T) {
@@ -138,13 +138,13 @@ func TestOneStruct(t *testing.T) {
 	got := len(structs)
 	wanted := 1
 	if wanted != got {
-		t.Errorf("unexpected func len wanted=%v, got=%v", wanted, got)
+		t.Errorf("unexpected struct len wanted=%v, got=%v", wanted, got)
 	}
 	st := structs[0]
 	sgot := st.GetName()
 	swanted := "tomate"
 	if swanted != sgot {
-		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
+		t.Errorf("unexpected struct name wanted=%q, got=%q", swanted, sgot)
 	}
 
 	// genericinterperter.Dump(d, 0)
@@ -226,6 +226,7 @@ func TestOneBrokenStruct(t *testing.T) {
 		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
 	}
 	fmt.Printf("%#v", err)
+	fmt.Printf("%+v", err)
 }
 
 func TestOneStructWithProps(t *testing.T) {
@@ -266,8 +267,8 @@ func TestOneStructWithProps(t *testing.T) {
 	if swanted != sgot {
 		t.Errorf("unexpected propA name wanted=%q, got=%q", swanted, sgot)
 	}
-	sgot = propA.Type.GetValue()
-	swanted = "string"
+	sgot = propA.Type.String()
+	swanted = " string"
 	if swanted != sgot {
 		t.Errorf("unexpected propA value wanted=%q, got=%q", swanted, sgot)
 	}
@@ -278,8 +279,8 @@ func TestOneStructWithProps(t *testing.T) {
 	if swanted != sgot {
 		t.Errorf("unexpected propB name wanted=%q, got=%q", swanted, sgot)
 	}
-	sgot = propB.Type.GetValue()
-	swanted = "int"
+	sgot = propB.Type.String()
+	swanted = " int"
 	if swanted != sgot {
 		t.Errorf("unexpected propB value wanted=%q, got=%q", swanted, sgot)
 	}
@@ -324,8 +325,8 @@ func TestOneTemplate(t *testing.T) {
 	if swanted != sgot {
 		t.Errorf("unexpected propA name wanted=%q, got=%q", swanted, sgot)
 	}
-	sgot = propA.Type.GetValue()
-	swanted = "*sync.Mutex"
+	sgot = propA.Type.String()
+	swanted = " *sync.Mutex"
 	if swanted != sgot {
 		t.Errorf("unexpected propA value wanted=%q, got=%q", swanted, sgot)
 	}
