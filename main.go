@@ -157,17 +157,15 @@ func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 		name := fmt.Sprintf("placeholder%v", len(outData.placeholders))
 		m := NewPlaceholderTypeMutation(name, i)
 		outData.placeholders = append(outData.placeholders, m)
-		fileDef.InsertAfter(i, m.PlaceholderDecl)
-		fileDef.Remove(i)
+		fileDef.MustInsertAfter(i, m.PlaceholderDecl)
+		fileDef.MustRemove(i)
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
 	}
 	// template XXX<Modifier> struct {}
 	// are to be removed, they really just template expressions.
 	for _, i := range tplTypes {
-		if !fileDef.Remove(i) {
-			panic("r")
-		}
+		fileDef.MustRemove(i)
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
 	}
@@ -177,9 +175,7 @@ func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 	// are to be removed, they really just template expressions.
 	// it also attaches the method to their type.
 	for _, i := range tplFuncs {
-		if !fileDef.Remove(i) {
-			panic("r")
-		}
+		fileDef.MustRemove(i)
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
 		i.GetBody().SetTokenValue(glanglexer.GreaterToken, ":>") // trick unti fix.
@@ -188,9 +184,7 @@ func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 	// <define> func XXX ()
 	// are to be removed because those funcs are injected into the template instances
 	for _, i := range defFuncs {
-		if !fileDef.Remove(i) {
-			panic("r")
-		}
+		fileDef.MustRemove(i)
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
 		defineFunc = append(defineFunc, i)
@@ -552,7 +546,7 @@ func (t *ImplTypeMutation) mutate(mutators []*TypeMutator, data interface{}) (*g
 		ws := genericinterperter.NewTokenWithPos(lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, 0, 0)
 
 		// define the last genrated type as an underlying type of i
-		ID := glang.NewIdentifierDecl(tok)
+		ID := glang.NewIdentifierDecl()
 		ID.AddExpr(tok)
 		i.GetBlock().Underlying = append(i.GetBlock().Underlying, ID)
 		i.GetBlock().InsertAt(1, nl)
