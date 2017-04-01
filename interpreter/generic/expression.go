@@ -7,16 +7,20 @@ import (
 	lexer "github.com/mh-cbon/state-lexer"
 )
 
+// ExprReceiver receives tokens
 type ExprReceiver interface {
 	AddExpr(expr Tokener)
 	AddExprs(expr []Tokener)
 }
+
+// ScopeReceiver is a context of token reception
 type ScopeReceiver interface {
 	ExprReceiver
 	GetName() string
 	FinalizeErr(*ParseError) error
 }
 
+// TokenPos is a token position
 type TokenPos struct {
 	Line int
 	Pos  int
@@ -26,6 +30,7 @@ func (t TokenPos) String() string {
 	return fmt.Sprintf("%3d:%3d", t.Line, t.Pos)
 }
 
+// TokenWithPos is a token with a pos.
 type TokenWithPos struct {
 	lexer.Token
 	Pos TokenPos
@@ -120,6 +125,39 @@ type Expression struct {
 	Tokens []Tokener
 }
 
+// First get 1st.
+func (f *Expression) First() Tokener {
+	if len(f.Tokens) > 0 {
+		return f.Tokens[0]
+	}
+	return nil
+}
+
+// GetPos get 1st pos.
+func (f *Expression) GetPos() TokenPos {
+	return f.First().GetPos() //let see if need to be pointer
+}
+
+// GetType get 1st TokenType.
+func (f *Expression) GetType() lexer.TokenType {
+	return f.First().GetType() //let see if need to be pointer
+}
+
+// GetValue get 1st value.
+func (f *Expression) GetValue() string {
+	return f.First().GetValue() //let see if need to be pointer
+}
+
+// SetType set 1st TokenType.
+func (f *Expression) SetType(T lexer.TokenType) {
+	f.First().SetType(T) //let see if need to be pointer
+}
+
+// SetValue set 1st value.
+func (f *Expression) SetValue(v string) {
+	f.First().SetValue(v) //let see if need to be pointer
+}
+
 // GetTokensAtLine finds all tokens at line.
 func (f *Expression) GetTokensAtLine(line int) []Tokener {
 	ret := []Tokener{}
@@ -157,7 +195,7 @@ func (f *Expression) GetToken(T lexer.TokenType) Tokener {
 // GetExprIndex returns index of a root token matching given expression.
 func (f *Expression) GetExprIndex(e Expressioner) int {
 	for i, t := range f.Tokens {
-		if t == e.(Tokener) {
+		if t.(Expressioner) == e {
 			return i
 		}
 	}
@@ -192,6 +230,13 @@ func (f *Expression) InsertAfter(ref Expressioner, nnew Tokener) bool {
 	return false
 }
 
+// MustInsertAfter ...
+func (f *Expression) MustInsertAfter(ref Expressioner, nnew Tokener) {
+	if !f.InsertAfter(ref, nnew) {
+		panic("MustInsertAfter failed")
+	}
+}
+
 // InsertAt a nnew root token at index.
 func (f *Expression) InsertAt(index int, nnew Tokener) {
 	f.Tokens = append(f.Tokens[:index], append([]Tokener{nnew}, f.Tokens[index:]...)...)
@@ -218,6 +263,13 @@ func (f *Expression) Remove(e Expressioner) bool {
 		return true
 	}
 	return false
+}
+
+// MustRemove ...
+func (f *Expression) MustRemove(e Expressioner) {
+	if !f.Remove(e) {
+		panic("MustRemove failed")
+	}
 }
 
 // RemoveAll root tokens matching those expressions.
