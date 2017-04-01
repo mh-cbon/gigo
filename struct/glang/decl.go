@@ -1,7 +1,6 @@
 package glang
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -22,7 +21,8 @@ func (f *ScopeDecl) GrepLine(line int) []genericinterperter.Tokener {
 // FindPackagesDecl returns all package declarations found.
 func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 	var ret []*PackageDecl
-	for _, t := range f.Filter(glanglexer.PackageToken) {
+	// for _, t := range f.Filter(glanglexer.PackageToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*PackageDecl); ok {
 			ret = append(ret, x)
 		}
@@ -33,7 +33,8 @@ func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 // FindImplementsTypes returns all implements declarations found.
 func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 	var ret []*ImplementDecl
-	for _, t := range f.Filter(glanglexer.ImplementsToken) {
+	// for _, t := range f.Filter(glanglexer.ImplementsToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*ImplementDecl); ok {
 			ret = append(ret, x)
 		}
@@ -44,7 +45,8 @@ func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 // FindStructsTypes returns all struct declarations found.
 func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 	var ret []*StructDecl
-	for _, t := range f.Filter(glanglexer.StructToken) {
+	// for _, t := range f.Filter(glanglexer.StructToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*StructDecl); ok {
 			ret = append(ret, x)
 		}
@@ -55,7 +57,8 @@ func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 // FindTemplatesTypes returns all template declarations found.
 func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 	var ret []*TemplateDecl
-	for _, t := range f.Filter(glanglexer.TemplateToken) {
+	// for _, t := range f.Filter(glanglexer.TemplateToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*TemplateDecl); ok {
 			ret = append(ret, x)
 		}
@@ -66,7 +69,8 @@ func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 // FindInterfaces returns all interface type declarations found.
 func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
 	var ret []*InterfaceDecl
-	for _, t := range f.Filter(glanglexer.InterfaceToken) {
+	// for _, t := range f.Filter(glanglexer.InterfaceToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*InterfaceDecl); ok {
 			ret = append(ret, x)
 		}
@@ -77,7 +81,8 @@ func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
 // FindFuncs returns all func declarations found.
 func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 	var ret []*FuncDecl
-	for _, t := range f.Filter(glanglexer.FuncToken) {
+	// for _, t := range f.Filter(glanglexer.FuncToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*FuncDecl); ok && x.IsTemplated() == false {
 			ret = append(ret, x)
 		}
@@ -88,12 +93,14 @@ func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 // FindTemplateFuncs returns all funcs with templating declarations found.
 func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 	var ret []FuncDeclarer
-	for _, t := range f.Filter(glanglexer.TplOpenToken) {
+	// for _, t := range f.Filter(glanglexer.TplOpenToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*TemplateFuncDecl); ok && x.IsDefine() == false {
 			ret = append(ret, x)
 		}
 	}
-	for _, t := range f.Filter(glanglexer.FuncToken) {
+	// for _, t := range f.Filter(glanglexer.FuncToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*FuncDecl); ok && x.IsTemplated() {
 			ret = append(ret, x)
 		}
@@ -104,7 +111,8 @@ func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 // FindDefineFuncs returns all <define> declarations found.
 func (f *ScopeDecl) FindDefineFuncs() []*TemplateFuncDecl {
 	var ret []*TemplateFuncDecl
-	for _, t := range f.Filter(glanglexer.TplOpenToken) {
+	// for _, t := range f.Filter(glanglexer.TplOpenToken) {
+	for _, t := range f.Tokens {
 		if x, ok := t.(*TemplateFuncDecl); ok && x.IsDefine() {
 			ret = append(ret, x)
 		}
@@ -170,7 +178,6 @@ func (f *FileDecl) GetName() string {
 
 // PackageDecl for package <name> declaratons
 type PackageDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Name genericinterperter.Tokener
 }
@@ -183,14 +190,13 @@ func (p *PackageDecl) String() string {
 func (p *PackageDecl) GetName() string {
 	return p.Name.GetValue()
 }
-func NewPackageDecl(t genericinterperter.Tokener) *PackageDecl {
-	return &PackageDecl{
-		Tokener: t,
-	}
+
+// NewPackageDecl creates a new PackageDecl
+func NewPackageDecl() *PackageDecl {
+	return &PackageDecl{}
 }
 
 type BodyBlockDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Open  genericinterperter.Tokener
 	Close genericinterperter.Tokener
@@ -205,14 +211,13 @@ func (p *BodyBlockDecl) GetOpen() string {
 func (p *BodyBlockDecl) GetClose() string {
 	return p.Close.GetValue()
 }
-func NewBodyBlockDecl(t genericinterperter.Tokener) *BodyBlockDecl {
-	return &BodyBlockDecl{
-		Tokener: t,
-	}
+
+// NewBodyBlockDecl creates a new BodyBlockDecl
+func NewBodyBlockDecl() *BodyBlockDecl {
+	return &BodyBlockDecl{}
 }
 
 type StructDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Name    *IdentifierDecl
 	Methods []FuncDeclarer
@@ -228,14 +233,13 @@ func (p *StructDecl) GetName() string {
 func (p *StructDecl) AddMethod(f FuncDeclarer) {
 	p.Methods = append(p.Methods, f)
 }
-func NewStructDecl(t genericinterperter.Tokener) *StructDecl {
-	return &StructDecl{
-		Tokener: t,
-	}
+
+// NewStructDecl creates a new StructDecl
+func NewStructDecl() *StructDecl {
+	return &StructDecl{}
 }
 
 type TemplateDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Name    *IdentifierDecl
 	Methods []FuncDeclarer
@@ -267,14 +271,12 @@ func (t *TemplateDecl) AddMethod(f FuncDeclarer) {
 	t.Methods = append(t.Methods, f)
 }
 
-func NewTemplateDecl(t genericinterperter.Tokener) *TemplateDecl {
-	return &TemplateDecl{
-		Tokener: t,
-	}
+// NewTemplateDecl creates a new TemplateDecl
+func NewTemplateDecl() *TemplateDecl {
+	return &TemplateDecl{}
 }
 
 type InterfaceDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Name  *IdentifierDecl
 	Block *SignsBlockDecl
@@ -286,14 +288,13 @@ func (p *InterfaceDecl) String() string {
 func (p *InterfaceDecl) GetName() string {
 	return p.Name.GetValue()
 }
-func NewInterfaceDecl(t genericinterperter.Tokener) *InterfaceDecl {
-	return &InterfaceDecl{
-		Tokener: t,
-	}
+
+// NewInterfaceDecl creates a new InterfaceDecl
+func NewInterfaceDecl() *InterfaceDecl {
+	return &InterfaceDecl{}
 }
 
 type ImplementDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Name              *IdentifierDecl
 	ImplementTemplate genericinterperter.Tokener
@@ -318,14 +319,13 @@ func (p *ImplementDecl) GetImplementTemplate() string {
 func (p *ImplementDecl) GetBlock() *PropsBlockDecl {
 	return p.FilterToken(glanglexer.BracketOpenToken).(*PropsBlockDecl)
 }
-func NewImplementDecl(t genericinterperter.Tokener) *ImplementDecl {
-	return &ImplementDecl{
-		Tokener: t,
-	}
+
+// NewImplementDecl creates a new ImplementDecl
+func NewImplementDecl() *ImplementDecl {
+	return &ImplementDecl{}
 }
 
 type PoireauDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	ImplementTemplate *IdentifierDecl
 }
@@ -334,28 +334,26 @@ func (p *PoireauDecl) String() string {
 	return p.Expression.String()
 }
 func (p *PoireauDecl) IsPointer() bool {
-	return p.Tokener.GetType() == glanglexer.PoireauPointerToken
+	return p.GetType() == glanglexer.PoireauPointerToken
 }
 func (p *PoireauDecl) GetImplementTemplate() string {
 	return p.ImplementTemplate.String()
 }
-func NewPoireauDecl(t genericinterperter.Tokener) *PoireauDecl {
-	return &PoireauDecl{
-		Tokener: t,
-	}
+
+// NewPoireauDecl creates a new PoireauDecl
+func NewPoireauDecl() *PoireauDecl {
+	return &PoireauDecl{}
 }
 
 type TemplateFuncDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Func     *FuncDecl
 	Modifier *BodyBlockDecl
 }
 
-func NewTemplateFuncDecl(t genericinterperter.Tokener) *TemplateFuncDecl {
-	return &TemplateFuncDecl{
-		Tokener: t,
-	}
+// NewTemplateFuncDecl creates a new TemplateFuncDecl
+func NewTemplateFuncDecl() *TemplateFuncDecl {
+	return &TemplateFuncDecl{}
 }
 
 func (t *TemplateFuncDecl) SetDelims(l, r string) {
@@ -399,6 +397,7 @@ func (t *TemplateFuncDecl) GetArgsNames() []*IdentifierDecl {
 	return t.Func.GetArgsNames()
 }
 
+// FuncDeclarer is a func or a template func
 type FuncDeclarer interface {
 	genericinterperter.Expressioner
 	IsMethod() bool
@@ -417,7 +416,6 @@ type FuncDeclarer interface {
 }
 
 type FuncDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Receiver *PropsBlockDecl
 	Name     *IdentifierDecl
@@ -463,14 +461,13 @@ func (p *FuncDecl) String() string {
 func (p *FuncDecl) GetModifier() *BodyBlockDecl {
 	return nil
 }
-func NewFuncDecl(t genericinterperter.Tokener) *FuncDecl {
-	return &FuncDecl{
-		Tokener: t,
-	}
+
+// NewFuncDecl creates a new FuncDecl
+func NewFuncDecl() *FuncDecl {
+	return &FuncDecl{}
 }
 
 type SignsBlockDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Underlying []*IdentifierDecl
 	Signs      []*FuncDecl
@@ -487,14 +484,13 @@ func (p *SignsBlockDecl) Add(sign *FuncDecl) {
 	p.Signs = append(p.Signs, sign)
 	p.Expression.AddExpr(sign)
 }
-func NewSignsBlockDecl(t genericinterperter.Tokener) *SignsBlockDecl {
-	return &SignsBlockDecl{
-		Tokener: t,
-	}
+
+// NewSignsBlockDecl creates a new SignsBlockDecl
+func NewSignsBlockDecl() *SignsBlockDecl {
+	return &SignsBlockDecl{}
 }
 
 type PropsBlockDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Poireaux   []*PoireauDecl
 	Underlying []*IdentifierDecl
@@ -513,7 +509,7 @@ func (p *PropsBlockDecl) AddPoireau(Mutation *PoireauDecl) {
 	p.Expression.AddExpr(Mutation)
 }
 func (p *PropsBlockDecl) Add(Name *IdentifierDecl, Type *IdentifierDecl) *PropDecl {
-	prop := NewPropDecl(Name)
+	prop := NewPropDecl()
 	prop.Name = Name
 	prop.Type = Type
 	prop.AddExpr(Name)
@@ -523,21 +519,20 @@ func (p *PropsBlockDecl) Add(Name *IdentifierDecl, Type *IdentifierDecl) *PropDe
 	return prop
 }
 func (p *PropsBlockDecl) AddT(Type *IdentifierDecl) *PropDecl {
-	prop := NewPropDecl(Type)
+	prop := NewPropDecl()
 	prop.Type = Type
 	prop.AddExpr(Type)
 	p.Props = append(p.Props, prop)
 	p.Expression.AddExpr(prop)
 	return prop
 }
-func NewPropsBlockDecl(t genericinterperter.Tokener) *PropsBlockDecl {
-	return &PropsBlockDecl{
-		Tokener: t,
-	}
+
+// NewPropsBlockDecl creates a new PropsBlockDecl
+func NewPropsBlockDecl() *PropsBlockDecl {
+	return &PropsBlockDecl{}
 }
 
 type AssignsBlockDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Assigns []*AssignDecl
 }
@@ -546,7 +541,7 @@ func (p *AssignsBlockDecl) String() string {
 	return p.Expression.String()
 }
 func (p *AssignsBlockDecl) Add(left, leftType, right genericinterperter.Tokener) *AssignDecl {
-	as := NewAssignDecl(left)
+	as := NewAssignDecl()
 	as.Left = left
 	as.LeftType = leftType
 	as.Right = right
@@ -554,14 +549,13 @@ func (p *AssignsBlockDecl) Add(left, leftType, right genericinterperter.Tokener)
 	p.Expression.AddExpr(as)
 	return as
 }
-func NewAssignsBlockDecl(t genericinterperter.Tokener) *AssignsBlockDecl {
-	return &AssignsBlockDecl{
-		Tokener: t,
-	}
+
+// NewAssignsBlockDecl creates a new AssignsBlockDecl
+func NewAssignsBlockDecl() *AssignsBlockDecl {
+	return &AssignsBlockDecl{}
 }
 
 type AssignDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Left     genericinterperter.Tokener
 	LeftType genericinterperter.Tokener
@@ -580,14 +574,13 @@ func (p *AssignDecl) GetLeftType() string {
 func (p *AssignDecl) GetRight() string {
 	return p.Right.GetValue()
 }
-func NewAssignDecl(t genericinterperter.Tokener) *AssignDecl {
-	return &AssignDecl{
-		Tokener: t,
-	}
+
+// NewAssignDecl creates a new AssignDecl
+func NewAssignDecl() *AssignDecl {
+	return &AssignDecl{}
 }
 
 type PropDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 	Name *IdentifierDecl
 	Type *IdentifierDecl
@@ -602,22 +595,20 @@ func (p *PropDecl) GetName() string {
 func (p *PropDecl) GetPropType() string {
 	return p.Type.GetValue()
 }
-func NewPropDecl(t genericinterperter.Tokener) *PropDecl {
-	return &PropDecl{
-		Tokener: t,
-	}
+
+// NewPropDecl creates a new PropDecl
+func NewPropDecl() *PropDecl {
+	return &PropDecl{}
 }
 
 type IdentifierDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 }
 
 var re = regexp.MustCompile("(<[^>]+>)")
 
 func (p *IdentifierDecl) IsImplement() bool {
-	fmt.Printf("%#v\n", p.Tokener)
-	return p.Tokener.GetType() == glanglexer.PoireauToken || p.Tokener.GetType() == glanglexer.PoireauPointerToken
+	return p.GetType() == glanglexer.PoireauToken || p.GetType() == glanglexer.PoireauPointerToken
 }
 
 func (p *IdentifierDecl) GetSlugName() string {
@@ -629,70 +620,64 @@ func (p *IdentifierDecl) GetSlugName() string {
 func (p *IdentifierDecl) String() string {
 	return p.Expression.String()
 }
-func NewIdentifierDecl(t genericinterperter.Tokener) *IdentifierDecl {
-	return &IdentifierDecl{
-		Tokener: t,
-	}
+
+// NewIdentifierDecl creates a new IdentifierDecl
+func NewIdentifierDecl() *IdentifierDecl {
+	return &IdentifierDecl{}
 }
 
 type VarDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 }
 
 func (p *VarDecl) String() string {
 	return p.Expression.String()
 }
-func NewVarDecl(t genericinterperter.Tokener) *VarDecl {
-	return &VarDecl{
-		Tokener: t,
-	}
+
+// NewVarDecl creates a new VarDecl
+func NewVarDecl() *VarDecl {
+	return &VarDecl{}
 }
 
 type ConstDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 }
 
 func (p *ConstDecl) String() string {
 	return p.Expression.String()
 }
-func NewConstDecl(t genericinterperter.Tokener) *ConstDecl {
-	return &ConstDecl{
-		Tokener: t,
-	}
+
+// NewConstDecl creates a new ConstDecl
+func NewConstDecl() *ConstDecl {
+	return &ConstDecl{}
 }
 
 type ExpressionDecl struct {
-	genericinterperter.Tokener
 	genericinterperter.Expression
 }
 
 func (p *ExpressionDecl) String() string {
 	return p.Expression.String()
 }
-func NewExpressionDecl(t genericinterperter.Tokener) *ExpressionDecl {
-	return &ExpressionDecl{
-		Tokener: t,
-	}
+
+// NewExpressionDecl creates a new ExpressionDecl
+func NewExpressionDecl() *ExpressionDecl {
+	return &ExpressionDecl{}
 }
 
-type CommentGroupDecl struct {
-	genericinterperter.Tokener
-	genericinterperter.Expression
-}
-
-func (p *CommentGroupDecl) String() string {
-	return p.Expression.String()
-}
-func (p *CommentGroupDecl) HasAny() bool {
-	return len(p.Expression.Tokens) > 0
-}
-
-func NewCommentGroupDecl(t genericinterperter.Tokener) *CommentGroupDecl {
-	c := &CommentGroupDecl{
-		Tokener: t,
-	}
-	c.AddExpr(t)
-	return c
-}
+// type CommentGroupDecl struct {
+// 	// genericinterperter.Tokener
+// 	genericinterperter.Expression
+// }
+//
+// func (p *CommentGroupDecl) String() string {
+// 	return p.Expression.String()
+// }
+// func (p *CommentGroupDecl) HasAny() bool {
+// 	return len(p.Expression.Tokens) > 0
+// }
+//
+// func NewCommentGroupDecl() *CommentGroupDecl {
+// 	c := &CommentGroupDecl{}
+// 	return c
+// }
