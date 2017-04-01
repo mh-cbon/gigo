@@ -1,4 +1,8 @@
-# gigo
+# gigo(t)
+
+> Cuisse d’agneau, de chevreuil, coupée pour être mangée.
+>
+> `"Un bon gigot d’agneau ."`
 
 [![travis Status](https://travis-ci.org/mh-cbon/gigo.svg?branch=master)](https://travis-ci.org/mh-cbon/gigo)[![appveyor Status](https://ci.appveyor.com/api/projects/status/github/mh-cbon/gigo?branch=master&svg=true)](https://ci.appveyor.com/project/mh-cbon/gigo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mh-cbon/gigo)](https://goreportcard.com/report/github.com/mh-cbon/gigo)

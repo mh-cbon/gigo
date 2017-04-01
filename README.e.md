@@ -1,4 +1,8 @@
-# {{.Name}}
+# {{.Name}}(t)
+
+> noun
+> Cuisse d’agneau, de chevreuil, coupée pour être mangée.
+> `"Un bon gigot d’agneau ."`
 
 {{template "badge/travis" .}}{{template "badge/appveyor" .}}{{template "badge/goreport" .}}{{template "badge/godoc" .}}
 

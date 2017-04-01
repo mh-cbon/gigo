@@ -5,7 +5,7 @@ type Todo struct {
   Done bool
 }
 
-type Todos implements<:Mutexed (Slice .Todo "Name")> {
+type Todos implements<:Mutexed (Slice, .Todo "Name")> {
   // it reads as a mutexed list of todo.
 }
 
