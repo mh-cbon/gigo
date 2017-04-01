@@ -1,4 +1,4 @@
-{{.Name}}
+# {{.Name}}
 
 {{template "badge/travis" .}}{{template "badge/appveyor" .}}{{template "badge/goreport" .}}{{template "badge/godoc" .}}
 
@@ -10,12 +10,18 @@ in input it takes
 
 {{file "demo.gigo.go"}}
 
-
 It produces
 
-{{cli "go" "run" "main.go"}}
+{{cli "go" "run" "main.go" "gen" "demo.gigo.go"}}
 
-Still some work to be done, but you got the idea!
+You can also get a specific symbol
+{{cli "go" "run" "main.go" "-symbol" "Push" "gen" "demo.gigo.go"}}
+
+Or you can dump the tokenizer output
+{{cli "go" "run" "main.go" "-symbol" "Push" "dump" "demo.gigo.go"}}
+
+Or get it to string after tokenization
+{{cli "go" "run" "main.go" "-symbol" "Push" "str" "demo.gigo.go"}}
 
 ## Changes
 

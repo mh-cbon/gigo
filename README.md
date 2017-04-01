@@ -1,4 +1,4 @@
-gigo
+# gigo
 
 [![travis Status](https://travis-ci.org/mh-cbon/gigo.svg?branch=master)](https://travis-ci.org/mh-cbon/gigo)[![appveyor Status](https://ci.appveyor.com/api/projects/status/github/mh-cbon/gigo?branch=master&svg=true)](https://ci.appveyor.com/project/mh-cbon/gigo)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mh-cbon/gigo)](https://goreportcard.com/report/github.com/mh-cbon/gigo)
@@ -97,11 +97,10 @@ func (s <:.Name>Slice) Remove(item <:.Name>) int {
 }
 ```
 
-
 It produces
 
 
-###### $ go run main.go
+###### $ go run main.go gen demo.gigo.go
 ```sh
 package main
 
@@ -207,9 +206,122 @@ type Todos struct {
 func (t *Todos) Hello(){fmt.Println("Hello")}
 ```
 
-Still some work to be done, but you got the idea!
+You can also get a specific symbol
+
+###### $ go run main.go -symbol Push gen demo.gigo.go
+```sh
+// create new Method Push of type .
+func (s TodoSlice) Push(item Todo) int {
+  s.items = append(s.items, item)
+  return len(s.items)
+}
+```
+
+Or you can dump the otkenizer output
+
+###### $ go run main.go -symbol Push dump demo.gigo.go
+```sh
+begin  *glang.FuncDecl      Tokens(10)
+                                          53:  0              nlToken "\n"
+                                          54:  0     commentLineToken "// create new Method Push of type ."
+                                          54: 35              nlToken "\n"
+                                          55:  0            funcToken "func"
+                                          55:  4              wsToken " "
+ begin  *glang.PropsBlockDecl Tokens(3)
+                                          55:  5       parenOpenToken "("
+  begin  *glang.PropDecl      Tokens(2)
+   begin  *glang.IdentifierDecl Tokens(1)
+                                          55:  6            wordToken "s"
+   end    *glang.IdentifierDecl tokens(1)
+   begin  *glang.IdentifierDecl Tokens(2)
+    begin  *glang.BodyBlockDecl Tokens(4)
+                                          55:  7              wsToken " "
+                                          55:  8         TplOpenToken "<:"
+                                          55: 10            wordToken ".Name"
+                                          55: 15        TplCloseToken ">"
+    end    *glang.BodyBlockDecl tokens(4)
+                                          55: 16            wordToken "Slice"
+   end    *glang.IdentifierDecl tokens(2)
+  end    *glang.PropDecl      tokens(2)
+                                          55: 21      parenCloseToken ")"
+ end    *glang.PropsBlockDecl tokens(3)
+ begin  *glang.IdentifierDecl Tokens(2)
+                                          55: 22              wsToken " "
+                                          55: 23            wordToken "Push"
+ end    *glang.IdentifierDecl tokens(2)
+ begin  *glang.PropsBlockDecl Tokens(3)
+                                          55: 27       parenOpenToken "("
+  begin  *glang.PropDecl      Tokens(2)
+   begin  *glang.IdentifierDecl Tokens(1)
+                                          55: 28            wordToken "item"
+   end    *glang.IdentifierDecl tokens(1)
+   begin  *glang.IdentifierDecl Tokens(1)
+    begin  *glang.BodyBlockDecl Tokens(4)
+                                          55: 32              wsToken " "
+                                          55: 33         TplOpenToken "<:"
+                                          55: 35            wordToken ".Name"
+                                          55: 40        TplCloseToken ">"
+    end    *glang.BodyBlockDecl tokens(4)
+   end    *glang.IdentifierDecl tokens(1)
+  end    *glang.PropDecl      tokens(2)
+                                          55: 41      parenCloseToken ")"
+ end    *glang.PropsBlockDecl tokens(3)
+ begin  *glang.PropsBlockDecl Tokens(1)
+  begin  *glang.PropDecl      Tokens(1)
+   begin  *glang.IdentifierDecl Tokens(2)
+                                          55: 42              wsToken " "
+                                          55: 43            wordToken "int"
+   end    *glang.IdentifierDecl tokens(2)
+  end    *glang.PropDecl      tokens(1)
+ end    *glang.PropsBlockDecl tokens(1)
+ begin  *glang.BodyBlockDecl Tokens(27)
+                                          55: 46              wsToken " "
+                                          55: 47     bracketOpenToken "{"
+                                          55: 48              nlToken "\n"
+                                          56:  0              wsToken " "
+                                          56:  1              wsToken " "
+                                          56:  2            wordToken "s.items"
+                                          56:  9              wsToken " "
+                                          56: 10          assignToken "="
+                                          56: 11              wsToken " "
+                                          56: 12            wordToken "append"
+                                          56: 18       parenOpenToken "("
+                                          56: 19            wordToken "s.items"
+                                          56: 26       semiColonToken ","
+                                          56: 27              wsToken " "
+                                          56: 28            wordToken "item"
+                                          56: 32      parenCloseToken ")"
+                                          56: 33              nlToken "\n"
+                                          57:  0              wsToken " "
+                                          57:  1              wsToken " "
+                                          57:  2          returnToken "return"
+                                          57:  8              wsToken " "
+                                          57:  9            wordToken "len"
+                                          57: 12       parenOpenToken "("
+                                          57: 13            wordToken "s.items"
+                                          57: 20      parenCloseToken ")"
+                                          57: 21              nlToken "\n"
+                                          58:  0    bracketCloseToken "}"
+ end    *glang.BodyBlockDecl tokens(27)
+end    *glang.FuncDecl      tokens(10)
+```
+
+Or get it to string after tokenization
+
+###### $ go run main.go -symbol Push str demo.gigo.go
+```sh
+// create new Method Push of type .
+func (s <:.Name>Slice) Push(item <:.Name>) int {
+  s.items = append(s.items, item)
+  return len(s.items)
+}
+```
 
 ## Changes
+
+#### Cli
+
+Added cli features to `gen`, `dump` and `output` results.
 
 #### Fixed body parsing and printing
 
