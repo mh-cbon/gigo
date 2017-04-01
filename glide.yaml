@@ -1,0 +1,6 @@
+package: github.com/mh-cbon/gigo
+ignore:
+  - github.com/mh-cbon/state-lexer
+import:
+- package: github.com/pkg/errors
+  version: ^0.8.0

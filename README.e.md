@@ -1,7 +1,7 @@
 # {{.Name}}(t)
 
-> noun
 > Cuisse d’agneau, de chevreuil, coupée pour être mangée.
+>
 > `"Un bon gigot d’agneau ."`
 
 {{template "badge/travis" .}}{{template "badge/appveyor" .}}{{template "badge/goreport" .}}{{template "badge/godoc" .}}
@@ -28,6 +28,10 @@ Or get it to string after tokenization
 {{cli "go" "run" "main.go" "-symbol" "Push" "str" "demo.gigo.go"}}
 
 ## Changes
+
+#### Cli
+
+Added cli features to gen, dump and output results.
 
 #### Fixed body parsing and printing
 

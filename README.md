@@ -221,7 +221,7 @@ func (s TodoSlice) Push(item Todo) int {
 }
 ```
 
-Or you can dump the otkenizer output
+Or you can dump the tokenizer output
 
 ###### $ go run main.go -symbol Push dump demo.gigo.go
 ```sh
@@ -325,7 +325,7 @@ func (s <:.Name>Slice) Push(item <:.Name>) int {
 
 #### Cli
 
-Added cli features to `gen`, `dump` and `output` results.
+Added cli features to gen, dump and output results.
 
 #### Fixed body parsing and printing
 
