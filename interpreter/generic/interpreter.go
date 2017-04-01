@@ -205,7 +205,9 @@ func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error
 	if n == nil {
 		n = I.Next()
 		I.Rewind()
-	} else if n == nil {
+	}
+
+	if n == nil {
 		// tbd adjust the position
 		n = NewTokenEOF()
 	}
