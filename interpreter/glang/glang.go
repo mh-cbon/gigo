@@ -75,14 +75,14 @@ func (I *GigoInterpreter) ProcessStrWithPkgDecl(content string, reader genericin
 // a scope can be a file or a string.
 func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 
-	if withpkgdcl {
-		pkgDecl, err := I.ReadPackageDecl()
-		if err != nil {
-			return err
-		}
-		I.Scope.AddExpr(pkgDecl)
-		// I.packages.AddToPackage(decl.GetName(), I.Scope.(glang.ScopeReceiver))
+	pkgDecl, err := I.ReadPackageDecl()
+	if withpkgdcl && err != nil {
+		return err
 	}
+	if pkgDecl != nil {
+		I.Scope.AddExpr(pkgDecl)
+	}
+	// I.packages.AddToPackage(decl.GetName(), I.Scope.(glang.ScopeReceiver))
 
 	for {
 		if I.Ended() {
@@ -259,13 +259,11 @@ func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 // and attach the current scope to it.
 func (I *GigoInterpreter) ReadPackageDecl() (*glang.PackageDecl, error) {
 
-	for I.Peek(glanglexer.PackageToken) == nil {
-		I.ReadMany(
-			glanglexer.NlToken,
-			genericlexer.CommentLineToken,
-			genericlexer.CommentBlockToken,
-			genericlexer.WsToken)
-	}
+	I.ReadMany(
+		glanglexer.NlToken,
+		genericlexer.CommentLineToken,
+		genericlexer.CommentBlockToken,
+		genericlexer.WsToken)
 
 	tok := I.Read(glanglexer.PackageToken)
 	if tok == nil {
