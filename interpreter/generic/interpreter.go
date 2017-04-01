@@ -1,6 +1,8 @@
 package generic
 
 import (
+	"github.com/pkg/errors"
+
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
 	lexer "github.com/mh-cbon/state-lexer"
 )
@@ -212,5 +214,5 @@ func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error
 		n = NewTokenEOF()
 	}
 	got := glanglexer.TokenType(n.GetType())
-	return I.Scope.FinalizeErr(NewParseError(n, reason, got, wanted))
+	return I.Scope.FinalizeErr(NewParseError(errors.New(reason), n, got, wanted))
 }

@@ -12,13 +12,13 @@ import (
 
 // SyntaxError is a syntax error
 type SyntaxError struct {
-	reason string
+	reason error
 	line   int
 	pos    int
 }
 
 // NewSyntaxError creates a new syntax error of reason r and pos l:p
-func NewSyntaxError(r string, l, p int) SyntaxError {
+func NewSyntaxError(r error, l, p int) SyntaxError {
 	return SyntaxError{
 		reason: r,
 		line:   l,
@@ -32,8 +32,6 @@ func (f *SyntaxError) Error() string {
 		f.reason,
 		f.line,
 		f.pos,
-		// f.wantedTypes,
-		// f.gotType,
 	)
 }
 
@@ -44,7 +42,14 @@ func (f *SyntaxError) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			io.WriteString(s, f.Error())
+			m := fmt.Sprintf(
+				"%v at line %v:%v\n\n%+v",
+				f.reason,
+				f.line,
+				f.pos,
+				f.reason,
+			)
+			io.WriteString(s, m)
 			return
 		}
 		fallthrough
@@ -114,7 +119,7 @@ type ParseError struct {
 }
 
 //NewParseError creates a parse error
-func NewParseError(n Tokener, reason, got string, wanted []string) *ParseError {
+func NewParseError(reason error, n Tokener, got string, wanted []string) *ParseError {
 	return &ParseError{
 		SyntaxError: SyntaxError{
 			reason: reason,
@@ -265,7 +270,7 @@ func NewStringTplSyntaxError(from error, name, tplContent string) *StringTplSynt
 		}
 	}
 	return &StringTplSyntaxError{
-		SyntaxError: NewSyntaxError(msg, line, -1),
+		SyntaxError: NewSyntaxError(from, line, -1),
 		Name:        name,
 		Src:         tplContent,
 	}
