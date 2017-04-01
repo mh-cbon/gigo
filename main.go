@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,10 +22,70 @@ import (
 )
 
 func main() {
+
+	var symbol string
+	flag.StringVar(&symbol, "symbol", "", "Find specified symbol name")
+
+	flag.Parse()
+
+	if flag.NArg() < 2 {
+		fmt.Println("Wrong usage, should be")
+		fmt.Println("go run main.go <cmd> <file>")
+		fmt.Println("")
+		fmt.Println("Available commands:")
+		fmt.Println("dump: pretty print the interpretation result of a file")
+		fmt.Println("gen: mutate a source file")
+		panic("not enough arguments")
+	}
+
+	cmd := flag.Arg(0)
+	path := flag.Arg(1)
 	// f := must open os.Open("demo.gigo")
 
-	fileName := "demo.gigo.go"
-	fileDef := MustInterpretFile(fileName)
+	fileDef := MustInterpretFile(path)
+
+	if cmd == "str" || cmd == "s" {
+		if symbol != "" {
+			symbols := fileDef.FindSymbols(symbol)
+			if len(symbols) > 0 {
+				fmt.Println(symbols[0])
+			} else {
+				fmt.Println("No symbol found for ", symbol)
+			}
+		} else {
+			fmt.Println(fileDef.String())
+		}
+	} else if cmd == "dump" || cmd == "d" {
+		if symbol != "" {
+			symbols := fileDef.FindSymbols(symbol)
+			if len(symbols) > 0 {
+				genericinterperter.Dump(symbols[0])
+			} else {
+				fmt.Println("No symbol found for ", symbol)
+			}
+		} else {
+			genericinterperter.Dump(fileDef)
+		}
+	} else if cmd == "gen" || cmd == "g" {
+		newDecl, err := mutate(fileDef)
+		if err != nil {
+			fmt.Printf("%#v\n", err)
+			panic(err)
+		}
+		if symbol != "" {
+			symbols := newDecl.FindSymbols(symbol)
+			if len(symbols) > 0 {
+				fmt.Println(symbols[0])
+			} else {
+				fmt.Println("No symbol found for ", symbol)
+			}
+		} else {
+			fmt.Println(newDecl.String())
+		}
+	}
+}
+
+func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 
 	allTplsFuncs := map[string]interface{}{
 		"joinexpr": func(glue string, tokens interface{}) string {
@@ -186,19 +247,15 @@ func main() {
 	outData.placeholders = append(outData.placeholders, y...)
 
 	tplContent := fileDef.String()
+
 	// execute the modified file tree with a taylor made template context.
+	tpl := makeTplOfSource("gigo", tplContent, allTplsFuncs)
 
-	t := makeTplOfSource("gigo", tplContent, allTplsFuncs)
-	err3 := t.Execute(os.Stdout, outData)
-	// err3 := t.Execute(ioutil.Discard, data)
-	if err3 != nil {
-		fErr := genericinterperter.NewStringTplSyntaxError(err3, "gigo", tplContent)
-		fmt.Printf("%#v\n", fErr)
-		panic(fErr)
+	var out bytes.Buffer
+	if err := tpl.Execute(&out, outData); err != nil {
+		return nil, genericinterperter.NewStringTplSyntaxError(err, "gigo", tplContent)
 	}
-	// fmt.Println((fileDef.String()))
-	// genericinterperter.Dump(fileDef, 0)
-
+	return InterpretString(fileDef.GetName(), out.String())
 }
 
 type Tomate struct {
