@@ -112,6 +112,30 @@ func (f *ScopeDecl) FindDefineFuncs() []*TemplateFuncDecl {
 	return ret
 }
 
+type slugamer interface {
+	GetSlugName() string
+}
+type namer interface {
+	GetName() string
+}
+
+// FindSymbols returns declarations that matches given symbol name.
+func (f *ScopeDecl) FindSymbols(symbol string) []genericinterperter.Expressioner {
+	ret := []genericinterperter.Expressioner{}
+	for _, t := range f.GetExprs() {
+		if x, ok := t.(slugamer); ok {
+			if strings.TrimSpace(x.GetSlugName()) == symbol { // should not need to trim here.
+				ret = append(ret, t)
+			}
+		} else if x, ok := t.(namer); ok {
+			if strings.TrimSpace(x.GetName()) == symbol { // should not need to trim here.
+				ret = append(ret, t)
+			}
+		}
+	}
+	return ret
+}
+
 // StrDecl is a string source code.
 type StrDecl struct {
 	ScopeDecl

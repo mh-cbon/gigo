@@ -22,6 +22,8 @@ type ScopeReceiver interface {
 	FindFuncs() []*FuncDecl
 	FindTemplateFuncs() []FuncDeclarer
 	FindDefineFuncs() []*TemplateFuncDecl
+	FindSymbols(string) []genericinterperter.Expressioner
+	String() string
 }
 
 func (p *Package) String() string {
