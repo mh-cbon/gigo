@@ -27,7 +27,7 @@ type TokenPos struct {
 }
 
 func (t TokenPos) String() string {
-	return fmt.Sprintf("%3d:%3d", t.Line, t.Pos)
+	return fmt.Sprintf("%3d:%-3d", t.Line, t.Pos)
 }
 
 // TokenWithPos is a token with a pos.
@@ -113,6 +113,7 @@ type Expressioner interface {
 	GetTokens() []Tokener
 	HasToken(lexer.TokenType) bool
 	Remove(Expressioner) bool
+	String() string
 	PrependExpr(Tokener)
 	PrependExprs([]Tokener)
 	GetToken(lexer.TokenType) Tokener
