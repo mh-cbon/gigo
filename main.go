@@ -332,6 +332,7 @@ func MustInterpretFile(fileName string) *glang.FileDecl {
 	ret, err := InterpretFile(fileName)
 	if err != nil {
 		fmt.Printf("%#v\n", err)
+		fmt.Printf("%+v\n", err)
 		panic(err)
 	}
 	return ret
