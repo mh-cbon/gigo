@@ -36,6 +36,8 @@ func TestOneFunc(t *testing.T) {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 
+	// genericinterperter.Dump(fn.Body)
+	// os.Exit(1)
 }
 
 func TestOneFuncReceiver(t *testing.T) {
@@ -225,8 +227,8 @@ func TestOneBrokenStruct(t *testing.T) {
 	if err == nil {
 		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
 	}
-	fmt.Printf("%#v", err)
-	fmt.Printf("%+v", err)
+	// fmt.Printf("%#v", err)
+	// fmt.Printf("%+v", err)
 }
 
 func TestOneStructWithProps(t *testing.T) {
@@ -454,6 +456,290 @@ func TestOnePackageDecl(t *testing.T) {
 	}
 
 	// genericinterperter.Dump(d, 0)
+}
+
+func TestOneVarDecl(t *testing.T) {
+
+	str := `
+var x = "content"
+var y string = "content1"
+var (
+	z = "tomate"
+	v string = "tomate1"
+)
+var z = interface{}{}
+var d = struct{Name string}{Name: ""}
+`
+	str = fmt.Sprintf("package %v\n\n%v", "tomate", str)
+	d, err := interpretString("tomate", str)
+	if err != nil {
+		t.Errorf("%#v\n", err)
+	}
+
+	founds := d.FindVarDecl()
+	got := len(founds)
+	wanted := 5
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+
+	found := founds[0]
+	got = len(found.GetAssignments())
+	wanted = 1
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment := found.GetAssignments()[0]
+	sgot := assignment.GetLeft()
+	swanted := "x"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "\"content\""
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// -
+	found = founds[1]
+	got = len(found.GetAssignments())
+	wanted = 1
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment = found.GetAssignments()[0]
+	sgot = assignment.GetLeft()
+	swanted = "y"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "\"content1\""
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// -
+	found = founds[2]
+	got = len(found.GetAssignments())
+	wanted = 2
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment = found.GetAssignments()[0]
+	sgot = assignment.GetLeft()
+	swanted = "z"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "\"tomate\""
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	//-
+	assignment = found.GetAssignments()[1]
+	sgot = assignment.GetLeft()
+	swanted = "v"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "\"tomate1\""
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// -
+	found = founds[3]
+	got = len(found.GetAssignments())
+	wanted = 1
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment = found.GetAssignments()[0]
+	sgot = assignment.GetLeft()
+	swanted = "z"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "interface" // TBD
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// -
+	found = founds[4]
+	got = len(found.GetAssignments())
+	wanted = 1
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment = found.GetAssignments()[0]
+	sgot = assignment.GetLeft()
+	swanted = "d"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "struct" // TBD
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+
+}
+
+func TestOneBrokenVar(t *testing.T) {
+	str := `var `
+	_, err := interpretString("tomate", str)
+	if err == nil {
+		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
+	}
+	// fmt.Printf("%#v", err)
+	// fmt.Printf("%+v", err)
+
+	str = `var interface = ""`
+	_, err = interpretString("tomate", str)
+	if err == nil {
+		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
+	}
+
+	str = `var struct = ""`
+	_, err = interpretString("tomate", str)
+	if err == nil {
+		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
+	}
+}
+
+func TestOneConstDecl(t *testing.T) {
+
+	str := `
+const y  = "content1"
+const (
+	numberToken lexer.TokenType = iota
+	wsToken
+)
+`
+	str = fmt.Sprintf("package %v\n\n%v", "tomate", str)
+	d, err := interpretString("tomate", str)
+	if err != nil {
+		t.Errorf("%#v\n", err)
+		// t.Errorf("%+v\n", err)
+	}
+	// genericinterperter.Dump(d)
+
+	founds := d.FindConstDecl()
+	got := len(founds)
+	wanted := 2
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+
+	found := founds[0]
+	got = len(found.GetAssignments())
+	wanted = 1
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment := found.GetAssignments()[0]
+	sgot := assignment.GetLeft()
+	swanted := "y"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "\"content1\""
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+
+	// -
+	found = founds[1]
+	got = len(found.GetAssignments())
+	wanted = 2
+	if wanted != got {
+		t.Errorf("unexpected var len wanted=%v, got=%v", wanted, got)
+	}
+	assignment = found.GetAssignments()[0]
+	sgot = assignment.GetLeft()
+	swanted = "numberToken"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetLeftType()
+	swanted = "lexer.TokenType"
+	if swanted != sgot {
+		t.Errorf("unexpected impl name wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetAssign()
+	swanted = "="
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+	sgot = assignment.GetRight()
+	swanted = "iota"
+	if swanted != sgot {
+		t.Errorf("unexpected assignment wanted=%q, got=%q", swanted, sgot)
+	}
+}
+
+func TestOneBrokenConst(t *testing.T) {
+	str := `const `
+	_, err := interpretString("tomate", str)
+	if err == nil {
+		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
+	}
+	// fmt.Printf("%#v", err)
+	// fmt.Printf("%+v", err)
+
+	str = `const interface = ""`
+	_, err = interpretString("tomate", str)
+	if err == nil {
+		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
+	}
+
+	str = `const struct = ""`
+	_, err = interpretString("tomate", str)
+	if err == nil {
+		t.Errorf("unexpected err wanted=%v, got=%v", "<notnil>", err)
+	}
 }
 
 func TestNoPackageDecl(t *testing.T) {

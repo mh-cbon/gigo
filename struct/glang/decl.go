@@ -21,7 +21,6 @@ func (f *ScopeDecl) GrepLine(line int) []genericinterperter.Tokener {
 // FindPackagesDecl returns all package declarations found.
 func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 	var ret []*PackageDecl
-	// for _, t := range f.Filter(glanglexer.PackageToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*PackageDecl); ok {
 			ret = append(ret, x)
@@ -33,7 +32,6 @@ func (f *ScopeDecl) FindPackagesDecl() []*PackageDecl {
 // FindImplementsTypes returns all implements declarations found.
 func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 	var ret []*ImplementDecl
-	// for _, t := range f.Filter(glanglexer.ImplementsToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*ImplementDecl); ok {
 			ret = append(ret, x)
@@ -45,7 +43,6 @@ func (f *ScopeDecl) FindImplementsTypes() []*ImplementDecl {
 // FindStructsTypes returns all struct declarations found.
 func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 	var ret []*StructDecl
-	// for _, t := range f.Filter(glanglexer.StructToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*StructDecl); ok {
 			ret = append(ret, x)
@@ -57,7 +54,6 @@ func (f *ScopeDecl) FindStructsTypes() []*StructDecl {
 // FindTemplatesTypes returns all template declarations found.
 func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 	var ret []*TemplateDecl
-	// for _, t := range f.Filter(glanglexer.TemplateToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*TemplateDecl); ok {
 			ret = append(ret, x)
@@ -66,10 +62,9 @@ func (f *ScopeDecl) FindTemplatesTypes() []*TemplateDecl {
 	return ret
 }
 
-// FindInterfaces returns all interface type declarations found.
+// FindInterfaces returns all interface type declarations.
 func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
 	var ret []*InterfaceDecl
-	// for _, t := range f.Filter(glanglexer.InterfaceToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*InterfaceDecl); ok {
 			ret = append(ret, x)
@@ -78,10 +73,9 @@ func (f *ScopeDecl) FindInterfaces() []*InterfaceDecl {
 	return ret
 }
 
-// FindFuncs returns all func declarations found.
+// FindFuncs returns all func declarations.
 func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 	var ret []*FuncDecl
-	// for _, t := range f.Filter(glanglexer.FuncToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*FuncDecl); ok && x.IsTemplated() == false {
 			ret = append(ret, x)
@@ -90,16 +84,14 @@ func (f *ScopeDecl) FindFuncs() []*FuncDecl {
 	return ret
 }
 
-// FindTemplateFuncs returns all funcs with templating declarations found.
+// FindTemplateFuncs returns all funcs with templating declarations.
 func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 	var ret []FuncDeclarer
-	// for _, t := range f.Filter(glanglexer.TplOpenToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*TemplateFuncDecl); ok && x.IsDefine() == false {
 			ret = append(ret, x)
 		}
 	}
-	// for _, t := range f.Filter(glanglexer.FuncToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*FuncDecl); ok && x.IsTemplated() {
 			ret = append(ret, x)
@@ -108,12 +100,33 @@ func (f *ScopeDecl) FindTemplateFuncs() []FuncDeclarer {
 	return ret
 }
 
-// FindDefineFuncs returns all <define> declarations found.
+// FindDefineFuncs returns all <define> declarations.
 func (f *ScopeDecl) FindDefineFuncs() []*TemplateFuncDecl {
 	var ret []*TemplateFuncDecl
-	// for _, t := range f.Filter(glanglexer.TplOpenToken) {
 	for _, t := range f.Tokens {
 		if x, ok := t.(*TemplateFuncDecl); ok && x.IsDefine() {
+			ret = append(ret, x)
+		}
+	}
+	return ret
+}
+
+// FindVarDecl returns all var declarations.
+func (f *ScopeDecl) FindVarDecl() []*VarDecl {
+	var ret []*VarDecl
+	for _, t := range f.Tokens {
+		if x, ok := t.(*VarDecl); ok {
+			ret = append(ret, x)
+		}
+	}
+	return ret
+}
+
+// FindConstDecl returns all const declarations.
+func (f *ScopeDecl) FindConstDecl() []*ConstDecl {
+	var ret []*ConstDecl
+	for _, t := range f.Tokens {
+		if x, ok := t.(*ConstDecl); ok {
 			ret = append(ret, x)
 		}
 	}
@@ -406,7 +419,6 @@ type FuncDeclarer interface {
 	// GetSlugName() string
 	GetReceiverType() *IdentifierDecl
 	GetReceiver() *PropsBlockDecl
-	String() string
 	GetModifier() *BodyBlockDecl
 	GetBody() *BodyBlockDecl
 	GetArgs() *PropsBlockDecl
@@ -549,6 +561,9 @@ func (p *AssignsBlockDecl) Add(left, leftType, right genericinterperter.Tokener)
 	p.Expression.AddExpr(as)
 	return as
 }
+func (p *AssignsBlockDecl) GetAssignments() []*AssignDecl {
+	return p.Assigns
+}
 
 // NewAssignsBlockDecl creates a new AssignsBlockDecl
 func NewAssignsBlockDecl() *AssignsBlockDecl {
@@ -559,6 +574,7 @@ type AssignDecl struct {
 	genericinterperter.Expression
 	Left     genericinterperter.Tokener
 	LeftType genericinterperter.Tokener
+	Assign   genericinterperter.Tokener
 	Right    genericinterperter.Tokener
 }
 
@@ -571,8 +587,14 @@ func (p *AssignDecl) GetLeft() string {
 func (p *AssignDecl) GetLeftType() string {
 	return p.LeftType.GetValue()
 }
+func (p *AssignDecl) GetAssign() string {
+	return p.Assign.GetValue()
+}
 func (p *AssignDecl) GetRight() string {
 	return p.Right.GetValue()
+}
+func (p *AssignDecl) GetAssignments() []*AssignDecl {
+	return []*AssignDecl{p}
 }
 
 // NewAssignDecl creates a new AssignDecl
@@ -626,10 +648,26 @@ func NewIdentifierDecl() *IdentifierDecl {
 	return &IdentifierDecl{}
 }
 
-type VarDecl struct {
-	genericinterperter.Expression
+type AssignDeclarer interface {
+	GetAssignments() []*AssignDecl
 }
 
+type VarDecl struct {
+	genericinterperter.Expression
+	Assignments []AssignDeclarer
+}
+
+func (p *VarDecl) GetAssignments() []*AssignDecl {
+	var ret []*AssignDecl
+	for _, z := range p.Assignments {
+		ret = append(ret, z.GetAssignments()...)
+	}
+	return ret
+}
+
+func (p *VarDecl) AddAssignment(a AssignDeclarer) {
+	p.Assignments = append(p.Assignments, a)
+}
 func (p *VarDecl) String() string {
 	return p.Expression.String()
 }
@@ -641,8 +679,19 @@ func NewVarDecl() *VarDecl {
 
 type ConstDecl struct {
 	genericinterperter.Expression
+	Assignments []AssignDeclarer
 }
 
+func (p *ConstDecl) GetAssignments() []*AssignDecl {
+	var ret []*AssignDecl
+	for _, z := range p.Assignments {
+		ret = append(ret, z.GetAssignments()...)
+	}
+	return ret
+}
+func (p *ConstDecl) AddAssignment(a AssignDeclarer) {
+	p.Assignments = append(p.Assignments, a)
+}
 func (p *ConstDecl) String() string {
 	return p.Expression.String()
 }
