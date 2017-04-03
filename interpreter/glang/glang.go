@@ -1,6 +1,8 @@
 package glang
 
 import (
+	"fmt"
+
 	genericinterperter "github.com/mh-cbon/gigo/interpreter/generic"
 	genericlexer "github.com/mh-cbon/gigo/lexer/generic"
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
@@ -730,6 +732,13 @@ func (I *GigoInterpreter) ReadExpressionsBlock(open lexer.TokenType, close lexer
 	ret = glang.NewBodyBlockDecl()
 	ret.Open = openTok
 	for {
+		I.ReadMany(
+			genericlexer.WsToken,
+			glanglexer.NlToken,
+			genericlexer.CommentLineToken,
+			genericlexer.CommentBlockToken,
+		)
+		ret.AddExprs(I.Emit())
 
 		if openTok := I.Read(open); openTok != nil {
 			count++
@@ -742,21 +751,28 @@ func (I *GigoInterpreter) ReadExpressionsBlock(open lexer.TokenType, close lexer
 			}
 
 		} else {
-			// I.ReadMany(
-			// 	genericlexer.WsToken,
-			// 	glanglexer.NlToken,
-			// 	genericlexer.CommentLineToken,
-			// 	genericlexer.CommentBlockToken,
-			// )
 
 			if I.Peek(glanglexer.VarToken) != nil {
-
-			} else if I.Peek(glanglexer.ReturnToken) != nil {
+				varDecl, err := I.ReadVarDecl()
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(varDecl)
+				// } else if I.Peek(glanglexer.ReturnToken) != nil {
 			} else if I.Peek(genericlexer.WordToken) != nil {
+				assign, err := I.ReadAssignDecl()
+				if assign != nil {
+					ret.AddExpr(assign)
+				}
+				if err != nil {
+					fmt.Println("=================")
+					fmt.Println(err)
+				}
 
+			} else {
+				I.Next()
 			}
 
-			I.Next()
 		}
 	}
 	return ret, nil
@@ -1042,6 +1058,54 @@ func (I *GigoInterpreter) ReadConstDecl() (*glang.ConstDecl, error) {
 	}
 
 	return ret, nil
+}
+
+// ReadAssignDecl reads an assign declaration.
+// name type eq value
+func (I *GigoInterpreter) ReadAssignDecl() (*glang.AssignDecl, error) {
+
+	assignment := glang.NewAssignDecl()
+	assignment.AddExprs(I.Emit())
+	left, err := I.ReadIdentifierDecl(false)
+	if err != nil {
+		return nil, err
+	}
+	assignment.AddExpr(left)
+
+	I.ReadMany(genericlexer.WsToken)
+	assignment.AddExprs(I.Emit())
+
+	var err2 error
+	var leftType genericinterperter.Tokener
+	eq := I.Read(glanglexer.TypeAssignToken)
+	if eq == nil {
+		leftType, err2 = I.ReadIdentifierDecl(false)
+		if leftType != nil && err2 != nil { // weird, need both var ?
+			return nil, err2
+		}
+		assignment.AddExpr(leftType)
+		I.ReadMany(genericlexer.WsToken)
+		eq = I.Read(glanglexer.TypeAssignToken)
+	}
+	if eq == nil {
+		return nil, I.Debug("unexpected token", glanglexer.TypeAssignToken)
+	}
+	I.ReadMany(genericlexer.WsToken)
+	assignment.AddExprs(I.Emit())
+
+	right, err2 := I.ReadExpression()
+	if err2 != nil {
+		return nil, err2
+	}
+	assignment.Left = left
+	assignment.LeftType = leftType
+	assignment.Assign = eq
+	assignment.Right = right
+	if right != nil {
+		assignment.AddExpr(right)
+	}
+
+	return assignment, nil
 }
 
 // ReadIdentifierDecl reads an identifier.

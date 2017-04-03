@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"testing"
 
 	genericinterperter "github.com/mh-cbon/gigo/interpreter/generic"
@@ -36,8 +37,8 @@ func TestOneFunc(t *testing.T) {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 
-	// genericinterperter.Dump(fn.Body)
-	// os.Exit(1)
+	genericinterperter.Dump(fn.Body)
+	os.Exit(1)
 }
 
 func TestOneFuncReceiver(t *testing.T) {
@@ -148,8 +149,6 @@ func TestOneStruct(t *testing.T) {
 	if swanted != sgot {
 		t.Errorf("unexpected struct name wanted=%q, got=%q", swanted, sgot)
 	}
-
-	// genericinterperter.Dump(d, 0)
 }
 
 func TestOneStructTemplate(t *testing.T) {
@@ -765,7 +764,8 @@ func interpretString(pkgName, content string) (*glang.StrDecl, error) {
 	var buf bytes.Buffer
 	buf.WriteString(content)
 	reader := makeLexerReader(&buf)
-	//reader = prettyPrinterLexer(reader)
+	reader = prettyPrinterLexer(reader)
+	// reader = protected(reader)
 
 	interpret := NewGigoInterpreter()
 	return interpret.ProcessStr(content, reader)
@@ -797,3 +797,28 @@ func prettyPrinterLexer(reader func() genericinterperter.Tokener) func() generic
 
 	return reader
 }
+
+// timeout on infinite loop, but won t work now as the interpreter is not a real stream of tokens.
+// func protected(reader func() genericinterperter.Tokener) func() genericinterperter.Tokener {
+//
+// 	return func() genericinterperter.Tokener {
+// 		timeout := make(chan bool, 1)
+// 		res := make(chan genericinterperter.Tokener)
+// 		go func() {
+// 			time.Sleep(1 * time.Second)
+// 			timeout <- true
+// 		}()
+// 		go func() {
+// 			res <- reader()
+// 		}()
+// 		var ret genericinterperter.Tokener
+// 		select {
+// 		case x := <-res:
+// 			ret = x
+// 			// a read from ch has occurred
+// 		case <-timeout:
+// 			panic("timeout")
+// 		}
+// 		return ret
+// 	}
+// }
