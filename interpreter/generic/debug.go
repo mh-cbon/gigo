@@ -131,6 +131,22 @@ func NewParseError(reason error, n Tokener, got string, wanted []string) *ParseE
 	}
 }
 
+// Format implements fmt.Formatter
+func (f *ParseError) Format(s fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		io.WriteString(s, f.Error())
+		return
+	case 's':
+		io.WriteString(s, f.Error())
+		return
+	case 'q':
+		fmt.Fprintf(s, "%q", f.Error())
+		return
+	}
+	f.SyntaxError.Format(s, verb)
+}
+
 func (f *ParseError) Error() string {
 	return fmt.Sprintf(
 		"%v (wanted=%v, got=%v)",
@@ -163,7 +179,7 @@ func (f *StringSyntaxError) Format(s fmt.State, verb rune) {
 			return
 		}
 	}
-	f.SyntaxError.Format(s, verb)
+	f.ParseError.Format(s, verb)
 }
 
 // PrettyPrint a syntax error
@@ -198,7 +214,7 @@ func (f *FileSyntaxError) Format(s fmt.State, verb rune) {
 			return
 		}
 	}
-	f.SyntaxError.Format(s, verb)
+	f.ParseError.Format(s, verb)
 }
 
 // PrettyPrint a syntax error
