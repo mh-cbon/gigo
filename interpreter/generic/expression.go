@@ -134,6 +134,19 @@ func (f *Expression) First() Tokener {
 	return nil
 }
 
+// Until returns all tokens until it met u.
+func (f *Expression) Until(u lexer.TokenType) *Expression {
+	ret := &Expression{}
+	for _, t := range f.Tokens {
+		if t.GetType() == u {
+			break
+		} else {
+			ret.Tokens = append(ret.Tokens, t)
+		}
+	}
+	return ret
+}
+
 // GetPos get 1st pos.
 func (f *Expression) GetPos() TokenPos {
 	return f.First().GetPos() //let see if need to be pointer

@@ -56,9 +56,11 @@ type Lexer struct {
 
 // Word ...
 type Word struct {
-	Value         string
-	Type          lexer.TokenType
-	Sep           bool
+	Value string
+	Type  lexer.TokenType
+	// Sep           bool
+	TextWord bool
+	// BeginOnly     bool
 	IsBlockIgnore bool
 	BlockSepEnd   string
 	ExcludeSepEnd bool
@@ -113,55 +115,61 @@ func (g *Lexer) process(l *lexer.L) lexer.StateFunc {
 			unreadWord(l, c)
 			for _, ws := range s {
 				if peekWord(l, ws.Value) == ws.Value {
-					unreadWord(l, ws.Value)
-					g.Emit(l, WordToken)
-					peekWord(l, ws.Value)
-					g.Emit(l, ws.Type)
-					return g.process
+					if !ws.TextWord || (len(l.Current()) == len(ws.Value) && isNonWord(l.Peek())) {
+						unreadWord(l, ws.Value)
+						g.Emit(l, WordToken)
+						peekWord(l, ws.Value)
+						readBlockIgnore(l, ws)
+						g.Emit(l, ws.Type)
+						return g.process
+					}
 				}
 			}
 			peekWord(l, w.Value)
 		}
 
-		if w.IsBlockIgnore {
-			if w.CanEscape {
-				readBlock(l, w.Value, w.EscapeStr)
-			} else {
-				readUntil(l, w.BlockSepEnd)
-			}
-			if w.ExcludeSepEnd {
-				unreadWord(l, w.BlockSepEnd)
-			}
-		}
+		readBlockIgnore(l, w)
 
-		g.Emit(l, w.Type)
+		if !w.TextWord || (len(l.Current()) == len(w.Value) && isNonWord(l.Peek())) {
+			g.Emit(l, w.Type)
+		}
 
 	} else if s := g.getStartingWords(l, string(r)); len(s) > 0 {
 		l.Rewind()
 		for _, ws := range s {
 			if peekWord(l, ws.Value) == ws.Value {
-				unreadWord(l, ws.Value)
-				g.Emit(l, WordToken)
-				peekWord(l, ws.Value)
+				if !ws.TextWord || (len(l.Current()) == len(ws.Value) && isNonWord(l.Peek())) {
+					unreadWord(l, ws.Value)
+					g.Emit(l, WordToken)
+					peekWord(l, ws.Value)
 
-				if ws.IsBlockIgnore {
-					if ws.CanEscape {
-						readBlock(l, ws.Value, ws.EscapeStr)
-					} else {
-						readUntil(l, ws.BlockSepEnd)
-					}
-					if ws.ExcludeSepEnd {
-						unreadWord(l, ws.BlockSepEnd)
-					}
+					readBlockIgnore(l, ws)
+					g.Emit(l, ws.Type)
+
+					return g.process
+				} else {
+					unreadWord(l, ws.Value)
 				}
-				g.Emit(l, ws.Type)
-				return g.process
 			}
 		}
 		l.Next()
 	}
 
 	return g.process
+}
+
+func readBlockIgnore(l *lexer.L, w Word) {
+
+	if w.IsBlockIgnore {
+		if w.CanEscape {
+			readBlock(l, w.Value, w.EscapeStr)
+		} else {
+			readUntil(l, w.BlockSepEnd)
+		}
+		if w.ExcludeSepEnd {
+			unreadWord(l, w.BlockSepEnd)
+		}
+	}
 }
 
 // StartHere ...
@@ -184,6 +192,10 @@ func (g *Lexer) getSimilarWords(l *lexer.L, w string) []Word {
 		}
 	}
 	return ret
+}
+
+func isNonWord(ch rune) bool {
+	return (ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z') && (ch < '0' || ch > '9') && ch != '_'
 }
 
 func rewindAll(l *lexer.L) {
@@ -245,5 +257,13 @@ func readUntil(l *lexer.L, w string) {
 func (g *Lexer) Emit(l *lexer.L, t lexer.TokenType) {
 	if l.Current() != "" {
 		l.Emit(t)
+	}
+}
+
+// New gigo lexer
+func New() *Lexer {
+	return &Lexer{
+		Printer: TokenType,
+		Words:   []Word{},
 	}
 }

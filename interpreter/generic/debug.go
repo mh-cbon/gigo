@@ -42,17 +42,10 @@ func (f *SyntaxError) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			m := fmt.Sprintf(
-				"%v at line %v:%v\n\n%+v",
-				f.reason,
-				f.line,
-				f.pos,
-				f.reason,
-			)
-			io.WriteString(s, m)
-			return
+			fmt.Fprintf(s, "%+v", f.reason)
+		} else {
+			io.WriteString(s, f.Error())
 		}
-		fallthrough
 	case 's':
 		io.WriteString(s, f.Error())
 	case 'q':
@@ -61,51 +54,33 @@ func (f *SyntaxError) Format(s fmt.State, verb rune) {
 }
 
 // PrettyPrint a syntax error
-func (f *SyntaxError) PrettyPrint(lines []string) string {
-	line := f.line
+func (f *SyntaxError) PrettyPrint(lines []string, startAtLine int) string {
+	// need test...
 	pos := f.pos
-
 	str := ""
-	// str := fmt.Sprintln(f.reason)
-	// str += fmt.Sprintf("In file=%v At=%v:%v\n", name, line, pos)
-	// str += fmt.Sprintf("Found=%v wanted=%v\n", f.gotType, f.wantedTypes)
 
-	toRead := len(lines) / 2
-	before := lines[:toRead]
-	about := lines[toRead]
-	after := lines[toRead+1:]
-	line -= toRead
-	if toRead > 2 {
-		before = lines[0 : toRead-1]
-		about = lines[toRead-1]
-		after = lines[toRead:]
-	} else {
-		line -= 2
-	}
+	for i, l := range lines {
+		if i == 0 {
+			if startAtLine > 0 {
+				str += fmt.Sprintln("...")
+			}
+		}
 
-	str += fmt.Sprintln("")
-	if line > 0 {
-		str += fmt.Sprintln("...")
-	}
-	for _, l := range before {
-		str += fmt.Sprintf("%000d", line)
-		str += fmt.Sprint("  ", l)
-		line++
-	}
-	str += fmt.Sprintf("%000d", line)
-	str += fmt.Sprint("  ", about)
-	line++
-	if pos < 0 {
-		str += fmt.Sprintf("✘%v", strings.Repeat("-", len(strconv.Itoa(line))-1))
-		str += fmt.Sprintf("- ↑↑↑ ???\n")
-	} else {
-		str += fmt.Sprintf("✘%v", strings.Repeat("-", len(strconv.Itoa(line))-1))
-		str += fmt.Sprintf("%v↑\n", strings.Repeat("-", pos))
-	}
-	for _, l := range after {
-		str += fmt.Sprintf("%000d", line)
-		str += fmt.Sprint("  ", l)
-		line++
+		str += fmt.Sprintf("%000d %v", startAtLine, l)
+
+		if startAtLine == f.line-1 {
+			x := strings.Repeat(" ", len(strconv.Itoa(startAtLine)))
+			if pos < 0 {
+				str += fmt.Sprintf("✘%v", x)
+				str += fmt.Sprintf("- ↑↑↑ ???\n")
+			} else {
+				str += fmt.Sprintf("✘%v", x)
+				str += fmt.Sprintf("%v↑\n", strings.Repeat("-", pos))
+			}
+		}
+
+		startAtLine++
+
 	}
 	str += fmt.Sprintln("...")
 	return str
@@ -135,16 +110,16 @@ func NewParseError(reason error, n Tokener, got string, wanted []string) *ParseE
 func (f *ParseError) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
-		io.WriteString(s, f.Error())
-		return
+		if s.Flag('+') {
+			fmt.Fprintf(s, "%+v", f.reason)
+		} else {
+			io.WriteString(s, f.Error())
+		}
 	case 's':
 		io.WriteString(s, f.Error())
-		return
 	case 'q':
 		fmt.Fprintf(s, "%q", f.Error())
-		return
 	}
-	f.SyntaxError.Format(s, verb)
 }
 
 func (f *ParseError) Error() string {
@@ -154,13 +129,6 @@ func (f *ParseError) Error() string {
 		f.wantedTypes,
 		f.gotType,
 	)
-}
-
-// PrettyPrint a syntax error
-func (f *ParseError) PrettyPrint(lines []string) string {
-	str := fmt.Sprintln(f.Error())
-	str += fmt.Sprintf("\n\n%v", f.SyntaxError.PrettyPrint(lines))
-	return str
 }
 
 // StringSyntaxError is a syntax error in the scope of a Str
@@ -176,10 +144,16 @@ func (f *StringSyntaxError) Format(s fmt.State, verb rune) {
 	case 'v':
 		if s.Flag('#') {
 			io.WriteString(s, f.PrettyPrint())
-			return
+		} else if s.Flag('+') {
+			fmt.Fprintf(s, "%+v", f.reason)
+		} else {
+			io.WriteString(s, f.Error())
 		}
+	case 's':
+		io.WriteString(s, f.Error())
+	case 'q':
+		fmt.Fprintf(s, "%q", f.Error())
 	}
-	f.ParseError.Format(s, verb)
 }
 
 // PrettyPrint a syntax error
@@ -189,7 +163,7 @@ func (f *StringSyntaxError) PrettyPrint() string {
 		lines[i] += "\n"
 	}
 	str := fmt.Sprintln(f.Error())
-	str += fmt.Sprintf("\n\n%v", f.ParseError.PrettyPrint(lines))
+	str += fmt.Sprintf("\n\n%v", f.ParseError.PrettyPrint(lines, 0))
 	return str
 }
 
@@ -211,10 +185,16 @@ func (f *FileSyntaxError) Format(s fmt.State, verb rune) {
 	case 'v':
 		if s.Flag('#') {
 			io.WriteString(s, f.PrettyPrint())
-			return
+		} else if s.Flag('+') {
+			fmt.Fprintf(s, "%+v", f.reason)
+		} else {
+			io.WriteString(s, f.Error())
 		}
+	case 's':
+		io.WriteString(s, f.Error())
+	case 'q':
+		fmt.Fprintf(s, "%q", f.Error())
 	}
-	f.ParseError.Format(s, verb)
 }
 
 // PrettyPrint a syntax error
@@ -230,7 +210,7 @@ func (f *FileSyntaxError) PrettyPrint() string {
 		lines = append(lines, line)
 	}))
 	str := fmt.Sprintln(f.Error())
-	str += fmt.Sprintf("\n\n%v", f.ParseError.PrettyPrint(lines))
+	str += fmt.Sprintf("\n\n%v", f.ParseError.PrettyPrint(lines, from))
 	return str
 }
 
@@ -305,10 +285,16 @@ func (f *StringTplSyntaxError) Format(s fmt.State, verb rune) {
 	case 'v':
 		if s.Flag('#') {
 			io.WriteString(s, f.PrettyPrint())
-			return
+		} else if s.Flag('+') {
+			fmt.Fprintf(s, "%+v", f.reason)
+		} else {
+			io.WriteString(s, f.Error())
 		}
+	case 's':
+		io.WriteString(s, f.Error())
+	case 'q':
+		fmt.Fprintf(s, "%q", f.Error())
 	}
-	f.SyntaxError.Format(s, verb)
 }
 
 // PrettyPrint a syntax error
@@ -327,7 +313,7 @@ func (f *StringTplSyntaxError) PrettyPrint() string {
 	}
 	lines = lines[from:to]
 	str := fmt.Sprintln(f.Error())
-	str += fmt.Sprintf("\n\n%v", f.SyntaxError.PrettyPrint(lines))
+	str += fmt.Sprintf("\n\n%v", f.SyntaxError.PrettyPrint(lines, from))
 	return str
 }
 

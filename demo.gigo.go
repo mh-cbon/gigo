@@ -36,14 +36,15 @@ template Mutexed<:.Name> struct {
   m.embed.<:$m.GetName>(<:$m.GetArgsNames | joinexpr ",">)
 }
 
+
 // a template to generate a type Slice of .
 template <:.Name>Slice struct {
   items []<:.Name>
 }
 
 // range over args to produce new FindBy methods
-<:range $a := .Args> func (m <:$.Name>Slice) FindBy<:$a>(<:$a> <:$.ArgType $a>) (<:$.Name>,bool) {
-  for i, items := range s.items {
+<:range $a := .Args> func (s <:$.Name>Slice) FindBy<:$a>(<:$a> <:$.ArgType $a>) (<:$.Name>,bool) {
+  for i, item := range s.items {
     if item.<:$a> == <:$a> {
       return item, true
     }
@@ -57,8 +58,8 @@ func (s <:.Name>Slice) Push(item <:.Name>) int {
   return len(s.items)
 }
 
-func (s <:.Name>Slice) Index(item <:.Name>) int {
-  for i, items := range s.items {
+func (s <:.Name>Slice) Index(search <:.Name>) int {
+  for i, item := range s.items {
     if item == search {
       return i
     }

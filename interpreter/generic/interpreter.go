@@ -9,14 +9,19 @@ import (
 
 // Interpreter navigates a tokens list to produce a tokens tree.
 type Interpreter struct {
+	isEnded  bool
+	Namer    TokenTyper
 	position int
+	Reader   TokenerReaderOK
 	Tokens   []Tokener
 	Scope    ScopeReceiver
 }
 
 // NewInterpreter makes an Interpreter starting at -1
-func NewInterpreter() *Interpreter {
+func NewInterpreter(r TokenerReaderOK) *Interpreter {
 	return &Interpreter{
+		Namer:    TokenTyper(glanglexer.TokenType),
+		Reader:   r,
 		position: -1,
 	}
 }
@@ -27,6 +32,15 @@ func (I *Interpreter) Next() Tokener {
 		I.position++
 		if I.position < len(I.Tokens) {
 			return I.Tokens[I.position]
+		}
+		for {
+			n := I.Reader.NextToken()
+			if n == nil {
+				I.isEnded = true
+				break
+			}
+			I.Tokens = append(I.Tokens, n)
+			return n
 		}
 	}
 	return nil
@@ -40,6 +54,11 @@ func (I *Interpreter) Rewind() {
 	}
 }
 
+// RewindAll returns to first position
+func (I *Interpreter) RewindAll() {
+	I.position = -1
+}
+
 // Last is the token at current position.
 func (I *Interpreter) Last() Tokener {
 	if I.position > -1 && I.position < len(I.Tokens) {
@@ -50,7 +69,7 @@ func (I *Interpreter) Last() Tokener {
 
 // Ended when the tokens list is empty.
 func (I *Interpreter) Ended() bool {
-	return len(I.Tokens) == 0
+	return I.isEnded
 }
 
 // Current unemitted tokens.
@@ -94,10 +113,7 @@ func (I *Interpreter) PeekOne() Tokener {
 
 // PeekN returns N tokens without changing position.
 func (I *Interpreter) PeekN(n int) []Tokener {
-	var ret []Tokener
-	for i := 0; i < n; i++ {
-		ret = append(ret, I.Next())
-	}
+	ret := I.ReadN(n)
 	for i := 0; i < n; i++ {
 		I.Rewind()
 	}
@@ -111,6 +127,26 @@ func (I *Interpreter) Peek(T ...lexer.TokenType) Tokener {
 		I.Rewind()
 	}
 	return t
+}
+
+// PeekUntil peeks anything until it met with any of T.
+func (I *Interpreter) PeekUntil(T ...lexer.TokenType) Tokener {
+	p := I.position
+	var ret Tokener
+	for {
+		n := I.Next()
+		if n == nil {
+			I.position = p
+			return nil
+		}
+		ret = n
+		for _, t := range T {
+			if n.GetType() == t {
+				I.Rewind()
+				return ret
+			}
+		}
+	}
 }
 
 // Read advances the position if next token is of type T.
@@ -128,6 +164,15 @@ func (I *Interpreter) Read(Ts ...lexer.TokenType) Tokener {
 		t = nil
 	}
 	return t
+}
+
+// ReadN advances the position of n.
+func (I *Interpreter) ReadN(n int) []Tokener {
+	var ret []Tokener
+	for i := 0; i < n; i++ {
+		ret = append(ret, I.Next())
+	}
+	return ret
 }
 
 // ReadMany advances until next token is not of types T.
@@ -153,8 +198,8 @@ func (I *Interpreter) ReadMany(Ts ...lexer.TokenType) []Tokener {
 
 // Get reads a token T and flushes the buffer.
 // bad idea ?
-func (I *Interpreter) Get(T lexer.TokenType) Tokener {
-	if t := I.Read(T); t != nil {
+func (I *Interpreter) Get(T ...lexer.TokenType) Tokener {
+	if t := I.Read(T...); t != nil {
 		I.Flush()
 		return t
 	}
@@ -201,7 +246,7 @@ func (I *Interpreter) ReadBlock(open lexer.TokenType, close lexer.TokenType) []T
 func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error {
 	wanted := []string{}
 	for _, w := range wantedTypes {
-		wanted = append(wanted, glanglexer.TokenType(w))
+		wanted = append(wanted, I.Namer(w))
 	}
 	n := I.Last()
 	if n == nil {
@@ -213,6 +258,6 @@ func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error
 		// tbd adjust the position
 		n = NewTokenEOF()
 	}
-	got := glanglexer.TokenType(n.GetType())
+	got := I.Namer(n.GetType())
 	return I.Scope.FinalizeErr(NewParseError(errors.New(reason), n, got, wanted))
 }

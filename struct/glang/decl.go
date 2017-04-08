@@ -230,6 +230,10 @@ func NewBodyBlockDecl() *BodyBlockDecl {
 	return &BodyBlockDecl{}
 }
 
+type BlockBodyer interface {
+	GetBlock() genericinterperter.Expressioner
+}
+
 type StructDecl struct {
 	genericinterperter.Expression
 	Name    *IdentifierDecl
@@ -237,6 +241,9 @@ type StructDecl struct {
 	Block   *PropsBlockDecl
 }
 
+func (p *StructDecl) GetBlock() genericinterperter.Expressioner {
+	return p.Block
+}
 func (p *StructDecl) String() string {
 	return p.Expression.String()
 }
@@ -330,7 +337,7 @@ func (p *ImplementDecl) GetImplementTemplate() string {
 	return p.ImplementTemplate.String()
 }
 func (p *ImplementDecl) GetBlock() *PropsBlockDecl {
-	return p.FilterToken(glanglexer.BracketOpenToken).(*PropsBlockDecl)
+	return p.FilterToken(glanglexer.BraceOpenToken).(*PropsBlockDecl)
 }
 
 // NewImplementDecl creates a new ImplementDecl
@@ -373,7 +380,7 @@ func (t *TemplateFuncDecl) SetDelims(l, r string) {
 	t.SetTokenValue(glanglexer.TplOpenToken, l)
 	t.SetTokenValue(glanglexer.TplCloseToken, r)
 }
-func (t *TemplateFuncDecl) GetReceiverType() *IdentifierDecl {
+func (t *TemplateFuncDecl) GetReceiverType() *ExpressionDecl {
 	return t.Func.GetReceiverType()
 }
 func (t *TemplateFuncDecl) GetName() string {
@@ -417,7 +424,7 @@ type FuncDeclarer interface {
 	IsTemplated() bool
 	GetName() string
 	// GetSlugName() string
-	GetReceiverType() *IdentifierDecl
+	GetReceiverType() *ExpressionDecl
 	GetReceiver() *PropsBlockDecl
 	GetModifier() *BodyBlockDecl
 	GetBody() *BodyBlockDecl
@@ -455,7 +462,7 @@ func (p *FuncDecl) GetBody() *BodyBlockDecl {
 func (p *FuncDecl) GetReceiver() *PropsBlockDecl {
 	return p.Receiver
 }
-func (p *FuncDecl) GetReceiverType() *IdentifierDecl {
+func (p *FuncDecl) GetReceiverType() *ExpressionDecl {
 	return p.Receiver.Props[0].Type
 }
 func (p *FuncDecl) GetName() string {
@@ -505,38 +512,52 @@ func NewSignsBlockDecl() *SignsBlockDecl {
 type PropsBlockDecl struct {
 	genericinterperter.Expression
 	Poireaux   []*PoireauDecl
-	Underlying []*IdentifierDecl
+	Underlying []*ExpressionDecl
 	Props      []*PropDecl
 }
 
 func (p *PropsBlockDecl) String() string {
 	return p.Expression.String()
 }
-func (p *PropsBlockDecl) AddUnderlying(Type *IdentifierDecl) {
+
+// AddUnderlying type identifier to a struct like body declaration.
+func (p *PropsBlockDecl) AddUnderlying(Type *ExpressionDecl) {
 	p.Underlying = append(p.Underlying, Type)
-	p.Expression.AddExpr(Type)
 }
+
+// AddPoireau poireau<> mutation to a struct like body declaration.
 func (p *PropsBlockDecl) AddPoireau(Mutation *PoireauDecl) {
 	p.Poireaux = append(p.Poireaux, Mutation)
-	p.Expression.AddExpr(Mutation)
 }
-func (p *PropsBlockDecl) Add(Name *IdentifierDecl, Type *IdentifierDecl) *PropDecl {
+
+// Add a property name/type to a struct like body declaration.
+func (p *PropsBlockDecl) Add(Name *IdentifierDecl, Type *ExpressionDecl) *PropDecl {
 	prop := NewPropDecl()
 	prop.Name = Name
 	prop.Type = Type
 	prop.AddExpr(Name)
 	prop.AddExpr(Type)
 	p.Props = append(p.Props, prop)
-	p.Expression.AddExpr(prop)
 	return prop
 }
-func (p *PropsBlockDecl) AddT(Type *IdentifierDecl) *PropDecl {
+
+// AddT type identifier to a struct like body declaration.
+// weird! its the same as AddUnderlying. tbd: check.
+func (p *PropsBlockDecl) AddT(Type *ExpressionDecl) *PropDecl {
 	prop := NewPropDecl()
 	prop.Type = Type
 	prop.AddExpr(Type)
 	p.Props = append(p.Props, prop)
-	p.Expression.AddExpr(prop)
 	return prop
+}
+
+// CollectVarNames lookups into PropsDecl and collect their name.
+func (p *PropsBlockDecl) CollectVarNames() []string {
+	ret := []string{}
+	for _, prop := range p.Props {
+		ret = append(ret, prop.GetName())
+	}
+	return ret
 }
 
 // NewPropsBlockDecl creates a new PropsBlockDecl
@@ -544,6 +565,9 @@ func NewPropsBlockDecl() *PropsBlockDecl {
 	return &PropsBlockDecl{}
 }
 
+// AssignsBlockDecl is like (
+// x = y
+// )
 type AssignsBlockDecl struct {
 	genericinterperter.Expression
 	Assigns []*AssignDecl
@@ -552,6 +576,8 @@ type AssignsBlockDecl struct {
 func (p *AssignsBlockDecl) String() string {
 	return p.Expression.String()
 }
+
+// Add a new assignment to this block.
 func (p *AssignsBlockDecl) Add(left, leftType, right genericinterperter.Tokener) *AssignDecl {
 	as := NewAssignDecl()
 	as.Left = left
@@ -561,13 +587,33 @@ func (p *AssignsBlockDecl) Add(left, leftType, right genericinterperter.Tokener)
 	p.Expression.AddExpr(as)
 	return as
 }
+
+// GetAssignments returns assignments of this block.
 func (p *AssignsBlockDecl) GetAssignments() []*AssignDecl {
 	return p.Assigns
+}
+
+// CollectVarNames list lst values of every assignments in this block.
+func (p *AssignsBlockDecl) CollectVarNames() []string {
+	ret := []string{}
+	for _, a := range p.Assigns {
+		ret = append(ret, a.CollectVarNames()...)
+	}
+	return ret
 }
 
 // NewAssignsBlockDecl creates a new AssignsBlockDecl
 func NewAssignsBlockDecl() *AssignsBlockDecl {
 	return &AssignsBlockDecl{}
+}
+
+type ReturnDecl struct {
+	genericinterperter.Expression
+}
+
+// NewReturnDecl creates a new ReturnDecl
+func NewReturnDecl() *ReturnDecl {
+	return &ReturnDecl{}
 }
 
 type AssignDecl struct {
@@ -585,16 +631,21 @@ func (p *AssignDecl) GetLeft() string {
 	return p.Left.GetValue()
 }
 func (p *AssignDecl) GetLeftType() string {
-	return p.LeftType.GetValue()
+	return p.LeftType.String()
 }
 func (p *AssignDecl) GetAssign() string {
 	return p.Assign.GetValue()
 }
 func (p *AssignDecl) GetRight() string {
-	return p.Right.GetValue()
+	return p.Right.String()
 }
 func (p *AssignDecl) GetAssignments() []*AssignDecl {
 	return []*AssignDecl{p}
+}
+
+// CollectVarNames returns left value.
+func (p *AssignDecl) CollectVarNames() []string {
+	return []string{p.GetLeft()}
 }
 
 // NewAssignDecl creates a new AssignDecl
@@ -605,14 +656,17 @@ func NewAssignDecl() *AssignDecl {
 type PropDecl struct {
 	genericinterperter.Expression
 	Name *IdentifierDecl
-	Type *IdentifierDecl
+	Type *ExpressionDecl
 }
 
 func (p *PropDecl) String() string {
 	return p.Expression.String()
 }
 func (p *PropDecl) GetName() string {
-	return p.Name.GetValue()
+	if p.Name == nil {
+		return "" //??
+	}
+	return p.Name.String()
 }
 func (p *PropDecl) GetPropType() string {
 	return p.Type.GetValue()
@@ -628,9 +682,17 @@ type IdentifierDecl struct {
 }
 
 var re = regexp.MustCompile("(<[^>]+>)")
+var re2 = regexp.MustCompile("(?i)^[a-z_][a-z_0-9]+$")
 
 func (p *IdentifierDecl) IsImplement() bool {
 	return p.GetType() == glanglexer.PoireauToken || p.GetType() == glanglexer.PoireauPointerToken
+}
+func (p *IdentifierDecl) IsVarName() bool {
+	return re2.MatchString(p.String())
+}
+
+func (p *IdentifierDecl) GetVarName() string {
+	return p.Expression.Until(glanglexer.DotToken).String()
 }
 
 func (p *IdentifierDecl) GetSlugName() string {
@@ -650,6 +712,7 @@ func NewIdentifierDecl() *IdentifierDecl {
 
 type AssignDeclarer interface {
 	GetAssignments() []*AssignDecl
+	CollectVarNames() []string
 }
 
 type VarDecl struct {
@@ -657,6 +720,7 @@ type VarDecl struct {
 	Assignments []AssignDeclarer
 }
 
+// GetAssignments of this var decl.
 func (p *VarDecl) GetAssignments() []*AssignDecl {
 	var ret []*AssignDecl
 	for _, z := range p.Assignments {
@@ -665,6 +729,7 @@ func (p *VarDecl) GetAssignments() []*AssignDecl {
 	return ret
 }
 
+// AddAssignment decl this var decl.
 func (p *VarDecl) AddAssignment(a AssignDeclarer) {
 	p.Assignments = append(p.Assignments, a)
 }
@@ -672,16 +737,27 @@ func (p *VarDecl) String() string {
 	return p.Expression.String()
 }
 
+// CollectVarNames declared in those assignments.
+func (p *VarDecl) CollectVarNames() []string {
+	ret := []string{}
+	for _, a := range p.GetAssignments() {
+		ret = append(ret, a.CollectVarNames()...)
+	}
+	return ret
+}
+
 // NewVarDecl creates a new VarDecl
 func NewVarDecl() *VarDecl {
 	return &VarDecl{}
 }
 
+// ConstDecl represents a const
 type ConstDecl struct {
 	genericinterperter.Expression
 	Assignments []AssignDeclarer
 }
 
+// GetAssignments of this const decl.
 func (p *ConstDecl) GetAssignments() []*AssignDecl {
 	var ret []*AssignDecl
 	for _, z := range p.Assignments {
@@ -689,11 +765,22 @@ func (p *ConstDecl) GetAssignments() []*AssignDecl {
 	}
 	return ret
 }
+
+// AddAssignment to this const decl.
 func (p *ConstDecl) AddAssignment(a AssignDeclarer) {
 	p.Assignments = append(p.Assignments, a)
 }
 func (p *ConstDecl) String() string {
 	return p.Expression.String()
+}
+
+// CollectVarNames declared in those assignments.
+func (p *ConstDecl) CollectVarNames() []string {
+	ret := []string{}
+	for _, a := range p.GetAssignments() {
+		ret = append(ret, a.CollectVarNames()...)
+	}
+	return ret
 }
 
 // NewConstDecl creates a new ConstDecl
@@ -708,10 +795,180 @@ type ExpressionDecl struct {
 func (p *ExpressionDecl) String() string {
 	return p.Expression.String()
 }
+func (p *ExpressionDecl) SlugValue() string {
+	s := p.String()
+	s = re.ReplaceAllString(s, "")
+	s = strings.Replace(s, "*", "", -1)
+	return strings.TrimSpace(s)
+}
 
 // NewExpressionDecl creates a new ExpressionDecl
 func NewExpressionDecl() *ExpressionDecl {
 	return &ExpressionDecl{}
+}
+
+type CallExprBlock struct {
+	genericinterperter.Expression
+	Open   genericinterperter.Tokener
+	Close  genericinterperter.Tokener
+	Params []*ExpressionDecl
+}
+
+func (c *CallExprBlock) AddParam(p *ExpressionDecl) {
+	c.Params = append(c.Params, p)
+}
+
+// NewCallExprBlock creates a new CallExprBlock
+func NewCallExprBlock() *CallExprBlock {
+	return &CallExprBlock{}
+}
+
+type CallExpr struct {
+	genericinterperter.Expression
+	ID     *IdentifierDecl
+	Params *CallExprBlock
+}
+
+func (p *CallExpr) String() string {
+	return p.Expression.String()
+}
+
+// NewCallExpr creates a new CallExpr
+func NewCallExpr() *CallExpr {
+	return &CallExpr{}
+}
+
+// AssignExpr is a one line assignment
+// a = x
+// a, b = x
+// a, b = x, y
+type AssignExpr struct {
+	genericinterperter.Expression
+	IDs    []*IdentifierDecl
+	Values []*ExpressionDecl
+}
+
+func (p *AssignExpr) String() string {
+	return p.Expression.String()
+}
+
+// AddID adds a left identifier.
+func (p *AssignExpr) AddID(ID *IdentifierDecl) {
+	p.IDs = append(p.IDs, ID)
+}
+
+// AddValue adds a right expression.
+func (p *AssignExpr) AddValue(v *ExpressionDecl) {
+	p.Values = append(p.Values, v)
+}
+
+// CollectVarNames declared in the left part.
+func (p *AssignExpr) CollectVarNames() []string {
+	ret := []string{}
+	for _, ID := range p.IDs {
+		ret = append(ret, ID.GetSlugName())
+	}
+	return ret
+}
+
+// NewAssignExpr creates a new AssignExpr
+func NewAssignExpr() *AssignExpr {
+	return &AssignExpr{}
+}
+
+type Initer interface {
+	GetInit() *AssignExpr
+}
+type Conder interface {
+	GetCond() genericinterperter.Tokener
+}
+type Bodyer interface {
+	GetBody() *BodyBlockDecl
+}
+
+type Stmter interface {
+	String() string // ?
+}
+
+type ForStmt struct {
+	genericinterperter.Expression
+	Init *AssignExpr
+	Cond *ExpressionDecl
+	Post *ExpressionDecl
+	Body *BodyBlockDecl
+}
+
+func (p *ForStmt) String() string {
+	return p.Expression.String()
+}
+
+func (p *ForStmt) GetBody() *BodyBlockDecl {
+	return p.Body
+}
+func (p *ForStmt) GetCond() genericinterperter.Tokener {
+	return p.Cond
+}
+
+func (p *ForStmt) GetInit() *AssignExpr {
+	return p.Init
+}
+
+// NewForStmt creates a new ForStmt
+func NewForStmt() *ForStmt {
+	return &ForStmt{}
+}
+
+type IfStmt struct {
+	genericinterperter.Expression
+	Init *AssignExpr
+	Cond genericinterperter.Tokener
+	Body *BodyBlockDecl
+	Else *ElseStmt
+}
+
+func (p *IfStmt) GetInit() *AssignExpr {
+	return p.Init
+}
+func (p *IfStmt) GetBody() *BodyBlockDecl {
+	return p.Body
+}
+
+func (p *IfStmt) GetCond() genericinterperter.Tokener {
+	return p.Cond
+}
+
+func (p *IfStmt) String() string {
+	return p.Expression.String()
+}
+
+// NewIfStmt creates a new IfStmt
+func NewIfStmt() *IfStmt {
+	return &IfStmt{}
+}
+
+type ElseStmt struct {
+	IfStmt
+}
+
+// NewElseStmt creates a new ElseStmt
+func NewElseStmt() *ElseStmt {
+	return &ElseStmt{}
+}
+
+type BinaryExpr struct {
+	genericinterperter.Expression
+	Left  *ExpressionDecl
+	Op    genericinterperter.Tokener
+	Right *ExpressionDecl
+}
+
+func (p *BinaryExpr) String() string {
+	return p.Expression.String()
+}
+
+// NewBinaryExpr creates a new BinaryExpr
+func NewBinaryExpr() *BinaryExpr {
+	return &BinaryExpr{}
 }
 
 // type CommentGroupDecl struct {

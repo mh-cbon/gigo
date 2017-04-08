@@ -59,12 +59,12 @@ func main() {
 		if symbol != "" {
 			symbols := fileDef.FindSymbols(symbol)
 			if len(symbols) > 0 {
-				genericinterperter.Dump(symbols[0])
+				glanginterpreter.Dump(symbols[0])
 			} else {
 				fmt.Println("No symbol found for ", symbol)
 			}
 		} else {
-			genericinterperter.Dump(fileDef)
+			glanginterpreter.Dump(fileDef)
 		}
 	} else if cmd == "gen" || cmd == "g" {
 		newDecl, err := mutate(fileDef)
@@ -131,9 +131,11 @@ func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 
 	var attachMethod = func(m glang.FuncDeclarer) {
 		for _, t := range tplTypes {
-			if t.GetSlugName() == m.GetReceiverType().GetSlugName() {
-				t.AddMethod(m)
-				return
+			if x, ok := m.GetReceiverType().First().(*glang.IdentifierDecl); ok {
+				if t.GetSlugName() == x.GetSlugName() {
+					t.AddMethod(m)
+					return
+				}
 			}
 		}
 		panic("not found")
@@ -141,9 +143,11 @@ func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 	var attachImplMethod = func(m glang.FuncDeclarer) bool {
 		if m.IsMethod() {
 			for _, t := range implTypes {
-				if t.Name.GetSlugName() == m.GetReceiverType().GetSlugName() {
-					t.AddMethod(m)
-					return true
+				if x, ok := m.GetReceiverType().First().(*glang.IdentifierDecl); ok {
+					if t.Name.GetSlugName() == x.GetSlugName() {
+						t.AddMethod(m)
+						return true
+					}
 				}
 			}
 		}
@@ -178,7 +182,7 @@ func mutate(fileDef *glang.FileDecl) (glang.ScopeReceiver, error) {
 		fileDef.MustRemove(i)
 		i.SetTokenValue(glanglexer.TplOpenToken, "<:")
 		i.SetTokenValue(glanglexer.TplCloseToken, ":>")
-		i.GetBody().SetTokenValue(glanglexer.GreaterToken, ":>") // trick unti fix.
+		// i.GetBody().SetTokenValue(glanglexer.GreaterToken, ":>") // trick unti fix.
 		attachMethod(i)
 	}
 	// <define> func XXX ()
@@ -288,18 +292,18 @@ func (t *TemplateTplDot) ArgType(s interface{}) string {
 	return reflect.TypeOf(s).Name()
 }
 
-func makeLexerReader(r io.Reader) func() genericinterperter.Tokener {
+func makeLexerReader(r io.Reader) genericinterperter.TokenerReaderOK {
 
 	l := lexer.New(r, (gigolexer.New()).StartHere)
 	l.ErrorHandler = func(e string) {}
 
-	return genericinterperter.PositionnedTokenReader(l.NextToken)
+	return genericinterperter.NewReadTokenWithPos(l)
 }
 
-func prettyPrinterLexer(reader func() genericinterperter.Tokener) func() genericinterperter.Tokener {
+func prettyPrinterLexer(reader genericinterperter.TokenerReaderOK) genericinterperter.TokenerReaderOK {
 
 	namer := genericinterperter.TokenerName(gigolexer.TokenName)
-	reader = genericinterperter.PrettyPrint(reader, namer)
+	reader = genericinterperter.NewReadNPrettyPrint(reader, namer, os.Stdout)
 
 	return reader
 }
@@ -313,8 +317,8 @@ func InterpretFile(fileName string) (*glang.FileDecl, error) {
 	reader := makeLexerReader(f)
 	// reader = prettyPrinterLexer(reader)
 
-	interpret := glanginterpreter.NewGigoInterpreter()
-	return interpret.ProcessFile(fileName, reader)
+	interpret := glanginterpreter.NewGigoInterpreter(reader)
+	return interpret.ProcessFile(fileName)
 }
 
 func InterpretString(pkgName, content string) (*glang.StrDecl, error) {
@@ -324,8 +328,8 @@ func InterpretString(pkgName, content string) (*glang.StrDecl, error) {
 	reader := makeLexerReader(&buf)
 	//reader = prettyPrinterLexer(reader)
 
-	interpret := glanginterpreter.NewGigoInterpreter()
-	return interpret.ProcessStr(content, reader)
+	interpret := glanginterpreter.NewGigoInterpreter(reader)
+	return interpret.ProcessStr(content)
 }
 
 func MustInterpretFile(fileName string) *glang.FileDecl {
@@ -547,8 +551,10 @@ func (t *ImplTypeMutation) mutate(mutators []*TypeMutator, data interface{}) (*g
 		ws := genericinterperter.NewTokenWithPos(lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, 0, 0)
 
 		// define the last genrated type as an underlying type of i
-		ID := glang.NewIdentifierDecl()
-		ID.AddExpr(tok)
+		ID := glang.NewExpressionDecl()
+		name := glang.NewIdentifierDecl()
+		name.AddExpr(tok)
+		ID.AddExpr(name)
 		i.GetBlock().Underlying = append(i.GetBlock().Underlying, ID)
 		i.GetBlock().InsertAt(1, nl)
 		i.GetBlock().InsertAt(2, ws)
