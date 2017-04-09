@@ -1490,9 +1490,10 @@ func (I *GigoInterpreter) ReadBinaryExpressionBlock(templated bool, until lexer.
 // The next token to analyze must be of type open,
 // the block must end with a token of type close.
 // In between data are read as a golang assign,
-// a = x
-// a, b = x
-// a, b = x, u
+//
+// - a = x
+// - a, b = x
+// - a, b = x, u
 func (I *GigoInterpreter) ReadAssignExpr(
 	templated bool,
 	allowdot bool,

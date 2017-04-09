@@ -648,9 +648,10 @@ ok && false
 	StringEq(t, block, "ok")
 	interpret.GetMany(glanglexer.NlToken)
 
+	// blah....
 	block, err = interpret.ReadBinaryExpressionBlock(false, glanglexer.NlToken)
 	mustNotErr(t, err)
-	StringEq(t, block, "ok")
+	StringEq(t, block, "ok && false")
 	interpret.GetMany(glanglexer.NlToken)
 
 }
