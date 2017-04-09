@@ -315,7 +315,7 @@ func InterpretFile(fileName string) (*glang.FileDecl, error) {
 	}
 	defer f.Close()
 	reader := makeLexerReader(f)
-	// reader = prettyPrinterLexer(reader)
+	reader = prettyPrinterLexer(reader)
 
 	interpret := glanginterpreter.NewGigoInterpreter(reader)
 	return interpret.ProcessFile(fileName)

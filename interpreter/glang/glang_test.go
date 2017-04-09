@@ -637,6 +637,24 @@ item.<:$a>
 	interpret.GetMany(glanglexer.NlToken)
 }
 
+func TestReadBinaryExpr(t *testing.T) {
+	content := `ok
+ok && false
+`
+	interpret := makeRawInterpreter(content)
+
+	block, err := interpret.ReadBinaryExpressionBlock(false, glanglexer.NlToken)
+	mustNotErr(t, err)
+	StringEq(t, block, "ok")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadBinaryExpressionBlock(false, glanglexer.NlToken)
+	mustNotErr(t, err)
+	StringEq(t, block, "ok")
+	interpret.GetMany(glanglexer.NlToken)
+
+}
+
 func TestReadIfStmt(t *testing.T) {
 	content := `if true {}
 if i>5 { }
@@ -646,6 +664,7 @@ if i:=5;i<5 { }
 if item.<:$a> == item.<:$a> {}
 if item.<:$a> == x<:$a> {}
 if item.<:$a> == <:$a>x {}
+if x, ok := t.(*PackageDecl); ok {}
 `
 	interpret := makeRawInterpreter(content)
 
@@ -679,26 +698,32 @@ if item.<:$a> == <:$a>x {}
 	condEq(t, block, "i<5")
 	bodyEq(t, block, "{ }")
 
-	interpret.blockscope.AddVar("item")
 	interpret.GetMany(glanglexer.NlToken)
+	interpret.blockscope.AddVar("item")
 	block, err = interpret.ReadIfStmt(true)
 	mustNotErr(t, err)
 	condEq(t, block, "item.<:$a> == item.<:$a>")
 	bodyEq(t, block, "{}")
 
-	interpret.blockscope.AddVar("x<:$a>")
 	interpret.GetMany(glanglexer.NlToken)
+	interpret.blockscope.AddVar("x<:$a>")
 	block, err = interpret.ReadIfStmt(true)
 	mustNotErr(t, err)
 	condEq(t, block, "item.<:$a> == x<:$a>")
 	bodyEq(t, block, "{}")
 
-	interpret.blockscope.AddVar("<:$a>x")
 	interpret.GetMany(glanglexer.NlToken)
+	interpret.blockscope.AddVar("<:$a>x")
 	block, err = interpret.ReadIfStmt(true)
 	mustNotErr(t, err)
 	condEq(t, block, "item.<:$a> == <:$a>x")
 	bodyEq(t, block, "{}")
+
+	interpret.GetMany(glanglexer.NlToken)
+	block, err = interpret.ReadIfStmt(true)
+	mustNotErr(t, err)
+	condEq(t, block, "ok")
+	StringEq(t, block, "if x, ok := t.(*PackageDecl); ok {}")
 }
 
 func TestFailReadIfStmt(t *testing.T) {
@@ -830,6 +855,7 @@ for range some {}
 for range []sometype{} {}
 for x,y := range []sometype{} {}
 for range someother.w {}
+for _, t := range f.Tokens {}
 `
 	interpret := makeRawInterpreter(content)
 
@@ -878,6 +904,12 @@ for range someother.w {}
 	block, err = interpret.ReadForBlock(false)
 	mustNotErr(t, err)
 	StringEq(t, block, `for range someother.w {}`)
+	interpret.GetMany(glanglexer.NlToken)
+
+	interpret.blockscope.AddVar("f")
+	block, err = interpret.ReadForBlock(false)
+	mustNotErr(t, err)
+	StringEq(t, block, `for _, t := range f.Tokens {}`)
 	interpret.GetMany(glanglexer.NlToken)
 }
 
@@ -979,6 +1011,7 @@ var (
 	x string = "e"
 	x int = 3
 )
+var ret []*PackageDecl
 `
 	interpret := makeRawInterpreter(content)
 
@@ -1007,6 +1040,11 @@ var (
 	StringEq(t, block, "var (\n\tx string = \"e\"\n\tx int = 3\n)")
 	interpret.GetMany(glanglexer.NlToken)
 
+	block, err = interpret.ReadVarDecl(false)
+	mustNotErr(t, err)
+	StringEq(t, block, "var ret []*PackageDecl")
+	interpret.GetMany(glanglexer.NlToken)
+
 	// Dump(block)
 }
 
@@ -1014,6 +1052,7 @@ func TestReadFunc(t *testing.T) {
 	content := `func (s <:.Name>Slice) Push(item <:.Name>) int {}
 func (t *Todos) Hello(){fmt.Println("Hello")}
 func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out>{}
+func (f *ScopeDecl) GrepLine(line int) []genericinterperter.Tokener {}
 `
 	interpret := makeRawInterpreter(content)
 
@@ -1030,6 +1069,11 @@ func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out
 	block, err = interpret.ReadFuncDecl(true, false)
 	mustNotErr(t, err)
 	StringEq(t, block, `func (m Mutexed<:$.Name>) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out>{}`)
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadFuncDecl(false, false)
+	mustNotErr(t, err)
+	StringEq(t, block, `func (f *ScopeDecl) GrepLine(line int) []genericinterperter.Tokener {}`)
 	interpret.GetMany(glanglexer.NlToken)
 }
 
