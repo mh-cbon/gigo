@@ -535,8 +535,6 @@ func (p *PropsBlockDecl) Add(Name *IdentifierDecl, Type *ExpressionDecl) *PropDe
 	prop := NewPropDecl()
 	prop.Name = Name
 	prop.Type = Type
-	prop.AddExpr(Name)
-	prop.AddExpr(Type)
 	p.Props = append(p.Props, prop)
 	return prop
 }
