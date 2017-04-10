@@ -77,23 +77,14 @@ func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 			break
 		}
 
-		I.ReadMany(
-			genericlexer.CommentLineToken,
-			genericlexer.CommentBlockToken,
-			genericlexer.WsToken,
-			glanglexer.NlToken)
+		I.ReadWs(true, true, glanglexer.NlToken)
 
 		if tok := I.Read(glanglexer.TypeToken); tok != nil {
 
 			I.KeepPreviousComment()
 			I.Scope.AddExprs(I.Emit())
 
-			I.ReadMany(
-				glanglexer.TypeToken,
-				glanglexer.NlToken,
-				genericlexer.CommentLineToken,
-				genericlexer.CommentBlockToken,
-				genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.NlToken, glanglexer.TypeToken)
 			preTokens := I.Emit()
 
 			name, err := I.ReadVarName(false, false, false)
@@ -101,7 +92,7 @@ func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 				return err
 			}
 
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true)
 
 			if typeTok := I.Peek(glanglexer.StructToken); typeTok != nil {
 
@@ -140,17 +131,10 @@ func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 		} else if tok := I.Peek(glanglexer.ImportToken); tok != nil {
 
 			I.Read(glanglexer.ImportToken)
-			I.ReadMany(
-				glanglexer.ImportToken, // wip
-				glanglexer.NlToken,
-				genericlexer.CommentLineToken,
-				genericlexer.CommentBlockToken,
-				genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.NlToken)
 			I.Scope.AddExprs(I.Emit())
 			I.ReadBlock(glanglexer.ParenOpenToken, glanglexer.ParenCloseToken)
-			I.ReadMany(
-				glanglexer.NlToken,
-				genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.NlToken)
 			I.Scope.AddExprs(I.Emit())
 
 		} else if tok := I.Peek(glanglexer.TemplateToken); tok != nil {
@@ -173,11 +157,7 @@ func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 			I.KeepPreviousComment()
 			I.Scope.AddExprs(I.Emit())
 
-			I.ReadMany(
-				glanglexer.NlToken,
-				genericlexer.CommentLineToken,
-				genericlexer.CommentBlockToken,
-				genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.NlToken)
 
 			funcDecl, err := I.ReadFuncDecl(true, false)
 			if err != nil {
@@ -216,11 +196,7 @@ func (I *GigoInterpreter) Process(withpkgdcl bool) error {
 // and attach the current scope to it.
 func (I *GigoInterpreter) ReadPackageDecl() (*glang.PackageDecl, error) {
 
-	I.ReadMany(
-		glanglexer.NlToken,
-		genericlexer.CommentLineToken,
-		genericlexer.CommentBlockToken,
-		genericlexer.WsToken)
+	I.ReadWs(true, true, glanglexer.NlToken)
 
 	tok := I.Read(glanglexer.PackageToken)
 	if tok == nil {
@@ -295,8 +271,7 @@ func (I *GigoInterpreter) ReadPropsBlock(
 	ret = glang.NewPropsBlockDecl()
 
 	for {
-		I.ReadMany(glanglexer.NlToken)
-		I.ReadWs(true, true)
+		I.ReadWs(true, true, glanglexer.NlToken)
 		ret.AddExprs(I.Emit())
 
 		if openTok := I.Read(open); openTok != nil {
@@ -398,11 +373,7 @@ func (I *GigoInterpreter) ReadAssignsBlock(
 	ret.AddExprs(I.Emit())
 
 	for {
-		I.ReadMany(genericlexer.WsToken,
-			genericlexer.CommentBlockToken,
-			genericlexer.CommentLineToken,
-			glanglexer.NlToken,
-		)
+		I.ReadWs(true, true, glanglexer.NlToken)
 		if openTok := I.Read(open); openTok != nil {
 			count++
 
@@ -424,7 +395,7 @@ func (I *GigoInterpreter) ReadAssignsBlock(
 			assignment.Left = left
 			assignment.AddExpr(left)
 
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true)
 			assignment.AddExprs(I.Emit())
 
 			if I.Peek(glanglexer.NlToken) == nil {
@@ -439,7 +410,7 @@ func (I *GigoInterpreter) ReadAssignsBlock(
 						assignment.LeftType = leftType
 						assignment.AddExpr(leftType)
 					}
-					I.ReadMany(genericlexer.WsToken)
+					I.ReadWs(true, true)
 
 					eq = I.Read(glanglexer.AssignToken)
 				}
@@ -449,13 +420,13 @@ func (I *GigoInterpreter) ReadAssignsBlock(
 				}
 
 				if eq == nil {
-					I.ReadMany(genericlexer.WsToken, glanglexer.NlToken)
+					I.ReadWs(true, true, glanglexer.NlToken)
 					assignment.AddExprs(I.Emit())
 
 				} else {
 
 					assignment.Assign = eq
-					I.ReadMany(genericlexer.WsToken)
+					I.ReadWs(true, true)
 					assignment.AddExprs(I.Emit())
 
 					var right *glang.ExpressionDecl
@@ -494,12 +465,7 @@ func (I *GigoInterpreter) ReadSignsBlock(
 ) (*glang.SignsBlockDecl, error) {
 
 	var ret *glang.SignsBlockDecl
-	I.ReadMany(
-		glanglexer.NlToken,
-		genericlexer.WsToken,
-		genericlexer.CommentBlockToken,
-		genericlexer.CommentLineToken,
-	)
+	I.ReadWs(true, true, glanglexer.NlToken)
 
 	openTok := I.Read(open)
 	if openTok == nil {
@@ -510,12 +476,7 @@ func (I *GigoInterpreter) ReadSignsBlock(
 	ret = glang.NewSignsBlockDecl()
 
 	for {
-		I.ReadMany(
-			glanglexer.NlToken,
-			genericlexer.WsToken,
-			genericlexer.CommentBlockToken,
-			genericlexer.CommentLineToken,
-		)
+		I.ReadWs(true, true, glanglexer.NlToken)
 		if openTok := I.Read(open); openTok != nil {
 			count++
 
@@ -533,7 +494,7 @@ func (I *GigoInterpreter) ReadSignsBlock(
 				if err != nil {
 					return ret, err
 				}
-				I.ReadMany(genericlexer.WsToken)
+				I.ReadWs(true, true)
 				if I.Peek(glanglexer.NlToken) != nil {
 					ret.AddUnderlying(ID)
 					I.ReadMany(glanglexer.NlToken)
@@ -685,7 +646,7 @@ func (I *GigoInterpreter) ReadFuncSign(ID *glang.IdentifierDecl) (*glang.FuncDec
 	ret.Name = ID
 	ret.AddExpr(ID)
 
-	I.ReadMany(genericlexer.WsToken)
+	I.ReadWs(true, true)
 	params, err := I.ReadParenDecl(false, glanglexer.ParenOpenToken, glanglexer.ParenCloseToken)
 	if err != nil {
 		return nil, err
@@ -694,7 +655,7 @@ func (I *GigoInterpreter) ReadFuncSign(ID *glang.IdentifierDecl) (*glang.FuncDec
 	ret.Params = params
 	ret.AddExpr(params)
 
-	I.ReadMany(genericlexer.WsToken)
+	I.ReadWs(true, true)
 	out, _ := I.ReadParenDecl(false, glanglexer.ParenOpenToken, glanglexer.ParenCloseToken)
 	if out != nil {
 		out.AddExprs(I.Emit())
@@ -738,12 +699,7 @@ func (I *GigoInterpreter) ReadExpressionsBlock(templated bool, open lexer.TokenT
 	defer I.blockscope.Leave()
 
 	for {
-		I.ReadMany(
-			genericlexer.WsToken,
-			glanglexer.NlToken,
-			genericlexer.CommentLineToken,
-			genericlexer.CommentBlockToken,
-		)
+		I.ReadWs(true, true, glanglexer.NlToken)
 		ret.AddExprs(I.Emit())
 
 		if openTok := I.Read(open); openTok != nil {
@@ -907,11 +863,9 @@ func (I *GigoInterpreter) ReadTypeIdentifier(templated bool) (*glang.ExpressionD
 	} else if p := I.Read(glanglexer.InterfaceToken); p != nil {
 		ret = glang.NewExpressionDecl()
 		ID := glang.NewIdentifierDecl()
-		I.ReadWs(true, true)
-		I.ReadMany(glanglexer.NlToken)
+		I.ReadWs(true, true, glanglexer.NlToken)
 		I.ReadMany(glanglexer.BraceOpenToken)
-		I.ReadWs(true, true)
-		I.ReadMany(glanglexer.NlToken)
+		I.ReadWs(true, true, glanglexer.NlToken)
 		I.ReadMany(glanglexer.BraceCloseToken)
 		ID.AddExprs(I.Emit())
 		ret.AddExpr(ID)
@@ -960,9 +914,8 @@ func (I *GigoInterpreter) ReadTypeName(templated bool, brackets bool) (*glang.Ex
 			}
 		}
 	}
-	if I.Read(glanglexer.MulToken) != nil {
-		I.ReadWs(true, true)
-	}
+
+	I.ReadWs(true, true, glanglexer.MulToken)
 
 	name, err := I.ReadTypeIdentifier(templated)
 
@@ -1039,7 +992,7 @@ func (I *GigoInterpreter) ReadIfStmt(templated bool) (*glang.IfStmt, error) {
 
 	ret = glang.NewIfStmt()
 
-	I.ReadMany(genericlexer.WsToken)
+	I.ReadWs(true, true)
 	ret.AddExprs(I.Emit())
 
 	whatis := I.PeekUntil(glanglexer.SemiColonToken,
@@ -1054,8 +1007,7 @@ func (I *GigoInterpreter) ReadIfStmt(templated bool) (*glang.IfStmt, error) {
 		}
 		ret.Init = init
 		ret.AddExpr(init)
-		I.ReadMany(genericlexer.WsToken)
-		I.Read(glanglexer.SemiColonToken)
+		I.ReadWs(true, true, glanglexer.SemiColonToken)
 		ret.AddExprs(I.Emit())
 		I.blockscope.AddVar(init.CollectVarNames()...)
 
@@ -1064,7 +1016,7 @@ func (I *GigoInterpreter) ReadIfStmt(templated bool) (*glang.IfStmt, error) {
 		return nil, I.Debug("Not an assignment")
 	}
 
-	I.Read(genericlexer.WsToken)
+	I.ReadWs(true, true)
 	ret.AddExprs(I.Emit())
 
 	block, err := I.ReadBinaryExpressionBlock(templated, glanglexer.BraceOpenToken)
@@ -1074,7 +1026,7 @@ func (I *GigoInterpreter) ReadIfStmt(templated bool) (*glang.IfStmt, error) {
 	ret.AddExpr(block)
 	ret.Cond = block
 
-	I.ReadMany(genericlexer.WsToken)
+	I.ReadWs(true, true)
 	ret.AddExprs(I.Emit())
 
 	body, err := I.ReadExpressionsBlock(templated,
@@ -1086,11 +1038,7 @@ func (I *GigoInterpreter) ReadIfStmt(templated bool) (*glang.IfStmt, error) {
 	ret.Body = body
 	ret.AddExpr(body)
 
-	I.ReadMany(
-		genericlexer.WsToken,
-		genericlexer.CommentBlockToken,
-		genericlexer.CommentLineToken,
-	)
+	I.ReadWs(true, true)
 	ret.AddExprs(I.Emit())
 
 	if I.Read(glanglexer.ElseToken) != nil {
@@ -1114,7 +1062,7 @@ func (I *GigoInterpreter) ReadElseStmt(templated bool) (*glang.ElseStmt, error) 
 
 	ret = glang.NewElseStmt()
 
-	I.ReadMany(genericlexer.WsToken, glanglexer.NlToken)
+	I.ReadWs(true, true, glanglexer.NlToken)
 
 	if I.Peek(glanglexer.IfToken) != nil {
 		block, err := I.ReadIfStmt(templated)
@@ -1149,7 +1097,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 	I.blockscope.Enter()
 	defer I.blockscope.Leave()
 
-	I.ReadMany(genericlexer.WsToken)
+	I.ReadWs(true, true)
 	ret.AddExprs(I.Emit())
 
 	whatis := I.PeekUntil(glanglexer.RangeToken, glanglexer.TypeAssignToken, glanglexer.BraceOpenToken)
@@ -1160,7 +1108,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 
 	if whatis.GetType() == glanglexer.RangeToken {
 		I.Read(glanglexer.RangeToken)
-		I.ReadMany(genericlexer.WsToken)
+		I.ReadWs(true, true)
 		ret.AddExprs(I.Emit())
 
 		block, err := I.ReadExpressionBlock(templated, glanglexer.BraceOpenToken)
@@ -1170,18 +1118,18 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 		ret.Post = block
 		ret.AddExpr(block)
 
-		I.ReadMany(genericlexer.WsToken)
+		I.ReadWs(true, true)
 		ret.AddExprs(I.Emit())
 
 	} else if whatis.GetType() == glanglexer.TypeAssignToken {
 
 		I.Read(glanglexer.TypeAssignToken)
-		I.ReadMany(genericlexer.WsToken)
+		I.ReadWs(true, true)
 
 		if I.Read(glanglexer.RangeToken) != nil {
 
 			I.RewindAll()
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true)
 			ret.AddExprs(I.Emit())
 
 			init, err := I.ReadAssignExpr(templated, false, glanglexer.RangeToken, glanglexer.SemiColonToken)
@@ -1192,9 +1140,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 			ret.AddExpr(init)
 			I.blockscope.AddVar(init.CollectVarNames()...)
 
-			I.ReadMany(genericlexer.WsToken)
-			I.Read(glanglexer.RangeToken)
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.RangeToken)
 			ret.AddExprs(I.Emit())
 
 			block, err := I.ReadExpressionBlock(templated, glanglexer.BraceOpenToken)
@@ -1204,7 +1150,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 			ret.Post = block
 			ret.AddExpr(block)
 
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true)
 			ret.AddExprs(I.Emit())
 
 		} else {
@@ -1218,9 +1164,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 			ret.AddExpr(init)
 			I.blockscope.AddVar(init.CollectVarNames()...)
 
-			I.ReadMany(genericlexer.WsToken)
-			I.Read(glanglexer.SemiColonToken)
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.SemiColonToken)
 			ret.AddExprs(I.Emit())
 
 			cond, err := I.ReadExpression()
@@ -1229,9 +1173,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 			}
 			ret.Cond = cond
 			ret.AddExpr(cond)
-			I.ReadMany(genericlexer.WsToken)
-			I.Read(glanglexer.SemiColonToken)
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.SemiColonToken)
 			ret.AddExprs(I.Emit())
 
 			post, err := I.ReadExpressionBlock(templated, glanglexer.BraceOpenToken)
@@ -1240,9 +1182,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 			}
 			ret.Post = post
 			ret.AddExpr(post)
-			I.ReadMany(genericlexer.WsToken)
-			I.Read(glanglexer.SemiColonToken)
-			I.ReadMany(genericlexer.WsToken)
+			I.ReadWs(true, true, glanglexer.SemiColonToken)
 			ret.AddExprs(I.Emit())
 		}
 
@@ -1254,7 +1194,7 @@ func (I *GigoInterpreter) ReadForBlock(templated bool) (*glang.ForStmt, error) {
 		}
 	}
 
-	I.ReadMany(genericlexer.WsToken, glanglexer.NlToken)
+	I.ReadWs(true, true, glanglexer.NlToken)
 	ret.AddExprs(I.Emit())
 
 	body, err := I.ReadExpressionsBlock(templated, glanglexer.BraceOpenToken, glanglexer.BraceCloseToken)
@@ -1482,8 +1422,7 @@ func (I *GigoInterpreter) ReadBinaryExpressionBlock(templated bool, until lexer.
 
 		I.ReadWs(true, true)
 		if I.Read(glanglexer.LAndToken, glanglexer.LOrToken) != nil {
-			I.ReadWs(true, true)
-			I.Read(glanglexer.NlToken)
+			I.ReadWs(true, true, glanglexer.NlToken)
 			ret.AddExprs(I.Emit())
 			continue
 		}
@@ -1657,8 +1596,7 @@ func (I *GigoInterpreter) ReadParenExprBlock(
 		} else if I.Read(glanglexer.ElipseToken) != nil {
 
 		} else if I.Read(glanglexer.CommaToken) != nil {
-			I.ReadWs(true, true)
-			I.Read(glanglexer.NlToken)
+			I.ReadWs(true, true, glanglexer.NlToken)
 
 		} else {
 			ret.AddExprs(I.Emit())
@@ -1848,8 +1786,7 @@ func (I *GigoInterpreter) ReadTemplateExprDecl() (*glang.TemplateFuncDecl, error
 	fn := glang.NewTemplateFuncDecl()
 	I.KeepPreviousComment()
 
-	I.ReadWs(true, true)
-	I.ReadMany(glanglexer.NlToken)
+	I.ReadWs(true, true, glanglexer.NlToken)
 	fn.AddExprs(I.Emit())
 
 	// smthig to improve here
@@ -2249,7 +2186,7 @@ func (I *GigoInterpreter) ReadInterfaceDecl() (*glang.InterfaceDecl, error) {
 }
 
 // ReadWs reads ws and comments.
-func (I *GigoInterpreter) ReadWs(cline, cblock bool) []genericinterperter.Tokener {
+func (I *GigoInterpreter) ReadWs(cline, cblock bool, Ts ...lexer.TokenType) []genericinterperter.Tokener {
 	w := []lexer.TokenType{genericlexer.WsToken}
 	if cline {
 		w = append(w, genericlexer.CommentLineToken)
@@ -2257,5 +2194,6 @@ func (I *GigoInterpreter) ReadWs(cline, cblock bool) []genericinterperter.Tokene
 	if cblock {
 		w = append(w, genericlexer.CommentBlockToken)
 	}
+	w = append(w, Ts...)
 	return I.ReadMany(w...)
 }

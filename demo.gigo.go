@@ -1,3 +1,5 @@
+// +build gigo
+
 package main
 
 type Todo struct {
