@@ -292,7 +292,7 @@ func (t *TemplateTplDot) ArgType(s interface{}) string {
 	return reflect.TypeOf(s).Name()
 }
 
-func makeLexerReader(r io.Reader) genericinterperter.TokenerReaderOK {
+func makeLexerReader(r io.Reader) genericinterperter.TokenerReader {
 
 	l := lexer.New(r, (gigolexer.New()).StartHere)
 	l.ErrorHandler = func(e string) {}
@@ -300,7 +300,7 @@ func makeLexerReader(r io.Reader) genericinterperter.TokenerReaderOK {
 	return genericinterperter.NewReadTokenWithPos(l)
 }
 
-func prettyPrinterLexer(reader genericinterperter.TokenerReaderOK) genericinterperter.TokenerReaderOK {
+func prettyPrinterLexer(reader genericinterperter.TokenerReader) genericinterperter.TokenerReader {
 
 	namer := genericinterperter.TokenerName(gigolexer.TokenName)
 	reader = genericinterperter.NewReadNPrettyPrint(reader, namer, os.Stdout)
