@@ -1,6 +1,9 @@
 package generic
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/pkg/errors"
 
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
@@ -12,13 +15,14 @@ type Interpreter struct {
 	isEnded  bool
 	Namer    TokenTyper
 	position int
-	Reader   TokenerReaderOK
+	try      int
+	Reader   TokenerReader
 	Tokens   []Tokener
 	Scope    ScopeReceiver
 }
 
 // NewInterpreter makes an Interpreter starting at -1
-func NewInterpreter(r TokenerReaderOK) *Interpreter {
+func NewInterpreter(r TokenerReader) *Interpreter {
 	return &Interpreter{
 		Namer:    TokenTyper(glanglexer.TokenType),
 		Reader:   r,
@@ -29,6 +33,14 @@ func NewInterpreter(r TokenerReaderOK) *Interpreter {
 // Next gives the next token.
 func (I *Interpreter) Next() Tokener {
 	if I.position < len(I.Tokens) {
+		I.try++
+		// this helps to avoid infinite loops, on the other hand it limits size of tokens.
+		if I.try > 10000 {
+			err := I.Debug("Inifinite loop detected")
+			fmt.Printf("%+v\n\n", err)
+			fmt.Printf("%#v", err)
+			os.Exit(1)
+		}
 		I.position++
 		if I.position < len(I.Tokens) {
 			return I.Tokens[I.position]
@@ -85,6 +97,7 @@ func (I *Interpreter) Current() []Tokener {
 
 // Emit current tokens in buffer.
 func (I *Interpreter) Emit() []Tokener {
+	I.try = 0
 	toks := []Tokener{}
 	c := I.Current()
 	if len(c) > 0 {
