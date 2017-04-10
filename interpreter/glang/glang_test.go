@@ -640,6 +640,8 @@ item.<:$a>
 func TestReadBinaryExpr(t *testing.T) {
 	content := `ok
 ok && false
+true == 1 || b == a
+x() || y()
 `
 	interpret := makeRawInterpreter(content)
 
@@ -648,10 +650,19 @@ ok && false
 	StringEq(t, block, "ok")
 	interpret.GetMany(glanglexer.NlToken)
 
-	// blah....
 	block, err = interpret.ReadBinaryExpressionBlock(false, glanglexer.NlToken)
 	mustNotErr(t, err)
 	StringEq(t, block, "ok && false")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadBinaryExpressionBlock(false, glanglexer.NlToken)
+	mustNotErr(t, err)
+	StringEq(t, block, "true == 1 || b == a")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadBinaryExpressionBlock(false, glanglexer.NlToken)
+	mustNotErr(t, err)
+	StringEq(t, block, "x() || y()")
 	interpret.GetMany(glanglexer.NlToken)
 
 }
@@ -1277,7 +1288,7 @@ func TestOneFuncReceiver(t *testing.T) {
 	}
 	fn := funcs[0]
 	sgot := fn.GetName()
-	swanted := " tomate" // something to be adjusted here
+	swanted := "tomate"
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -1295,7 +1306,7 @@ func TestOneFuncReceiver(t *testing.T) {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 	sgot = receiver.Type.String()
-	swanted = " *Receiver" // something to be adjusted here
+	swanted = "*Receiver" // something to be adjusted here
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -1328,7 +1339,7 @@ func TestOneFuncRepeater(t *testing.T) {
 	}
 	fn := funcs[0]
 	sgot := fn.GetName()
-	swanted := " tomate<:whatever>" // something to be adjusted here
+	swanted := "tomate<:whatever>"
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -1346,7 +1357,7 @@ func TestOneFuncRepeater(t *testing.T) {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 	sgot = receiver.Type.String()
-	swanted = " *Receiver<:whatever>" // something to be adjusted here
+	swanted = "*Receiver<:whatever>" // something to be adjusted here
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -1377,7 +1388,7 @@ func (s <:.Name>Slice) Push(item <:.Name>) int {
 	}
 	fn := funcs[0]
 	sgot := fn.GetName()
-	swanted := " Push" // something to be adjusted here
+	swanted := "Push"
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -1395,7 +1406,7 @@ func (s <:.Name>Slice) Push(item <:.Name>) int {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
 	sgot = receiver.Type.String()
-	swanted = " <:.Name>Slice" // something to be adjusted here
+	swanted = "<:.Name>Slice" // something to be adjusted here
 	if swanted != sgot {
 		t.Errorf("unexpected func name wanted=%q, got=%q", swanted, sgot)
 	}
@@ -2111,7 +2122,7 @@ func interpretStringWithPkgDecl(pkgName, content string) (*glang.StrDecl, error)
 	return interpret.ProcessStrWithPkgDecl(content)
 }
 
-func makeLexerReader(r io.Reader) genericinterperter.TokenerReaderOK {
+func makeLexerReader(r io.Reader) genericinterperter.TokenerReader {
 
 	l := lexer.New(r, (gigolexer.New()).StartHere)
 	l.ErrorHandler = func(e string) {}
@@ -2119,7 +2130,7 @@ func makeLexerReader(r io.Reader) genericinterperter.TokenerReaderOK {
 	return genericinterperter.NewReadTokenWithPos(l)
 }
 
-func prettyPrinterLexer(reader genericinterperter.TokenerReaderOK) genericinterperter.TokenerReaderOK {
+func prettyPrinterLexer(reader genericinterperter.TokenerReader) genericinterperter.TokenerReader {
 
 	namer := genericinterperter.TokenerName(gigolexer.TokenName)
 	reader = genericinterperter.NewReadNPrettyPrint(reader, namer, os.Stdout)
