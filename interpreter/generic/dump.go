@@ -11,6 +11,8 @@ import (
 func Dump(src Expressioner) {
 	DumpWithNamer(src, genericlexer.TokenType, 0)
 }
+
+// DumpWithNamer recursively prints an expression
 func DumpWithNamer(src Expressioner, typer TokenTyper, lvl int) {
 	x := strings.Repeat(" ", lvl)
 	T := fmt.Sprintf("%T", src)
@@ -57,6 +59,8 @@ func DumpWithNamer(src Expressioner, typer TokenTyper, lvl int) {
 func DumpTokens(tokens []Tokener) {
 	DumpTokensWithNamer(tokens, genericlexer.TokenType)
 }
+
+// DumpTokensWithNamer prints a list of tokens
 func DumpTokensWithNamer(tokens []Tokener, typer TokenTyper) {
 	x := strings.Repeat(" ", 2)
 	fmt.Printf("%v%-6v %-20T tokens(%v)\n", x, "begin", "<noname>", len(tokens))
