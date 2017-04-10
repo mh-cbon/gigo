@@ -674,7 +674,7 @@ func compareToken(t *testing.T, c int, want, got Tokener) bool {
 	return true
 }
 
-func stringTokenizer(content string) TokenerReaderOK {
+func stringTokenizer(content string) TokenerReader {
 
 	var buf bytes.Buffer
 	buf.WriteString(content)
@@ -682,7 +682,7 @@ func stringTokenizer(content string) TokenerReaderOK {
 	return makeLexerReader(&buf)
 }
 
-func makeLexerReader(r io.Reader) TokenerReaderOK {
+func makeLexerReader(r io.Reader) TokenerReader {
 	l := lexer.New(r, (glanglexer.New()).StartHere)
 	l.ErrorHandler = func(e string) {}
 
