@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	// genericlexer "github.com/mh-cbon/gigo/lexer/generic"
+	genericlexer "github.com/mh-cbon/gigo/lexer/generic"
 
 	glanglexer "github.com/mh-cbon/gigo/lexer/glang"
 	lexer "github.com/mh-cbon/state-lexer"
@@ -22,35 +22,35 @@ func TestNextUntilEOF(t *testing.T) {
 	interpret := NewInterpreter(d)
 
 	expected := []Tokener{
-		&TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}},
-		&TokenWithPos{Token: lexer.Token{Type: 3, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}},
-		&TokenWithPos{Token: lexer.Token{Type: 20, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}},
-		&TokenWithPos{Token: lexer.Token{Type: 21, Value: ")"}, Pos: TokenPos{Line: 1, Pos: 12}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 1, Pos: 13}},
-		&TokenWithPos{Token: lexer.Token{Type: 45, Value: "{"}, Pos: TokenPos{Line: 1, Pos: 14}},
-		&TokenWithPos{Token: lexer.Token{Type: 6, Value: "\n"}, Pos: TokenPos{Line: 1, Pos: 15}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: "\t"}, Pos: TokenPos{Line: 2, Pos: 0}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: "\t"}, Pos: TokenPos{Line: 2, Pos: 1}},
-		&TokenWithPos{Token: lexer.Token{Type: 16, Value: "var"}, Pos: TokenPos{Line: 2, Pos: 2}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 2, Pos: 5}},
-		&TokenWithPos{Token: lexer.Token{Type: 3, Value: "expr"}, Pos: TokenPos{Line: 2, Pos: 6}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 2, Pos: 10}},
-		&TokenWithPos{Token: lexer.Token{Type: 85, Value: "string"}, Pos: TokenPos{Line: 2, Pos: 11}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 2, Pos: 17}},
-		&TokenWithPos{Token: lexer.Token{Type: 22, Value: "="}, Pos: TokenPos{Line: 2, Pos: 18}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 2, Pos: 19}},
-		&TokenWithPos{Token: lexer.Token{Type: 4, Value: "\"some\""}, Pos: TokenPos{Line: 2, Pos: 20}},
-		&TokenWithPos{Token: lexer.Token{Type: 6, Value: "\n"}, Pos: TokenPos{Line: 2, Pos: 26}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: "\t"}, Pos: TokenPos{Line: 3, Pos: 0}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: "\t"}, Pos: TokenPos{Line: 3, Pos: 1}},
-		&TokenWithPos{Token: lexer.Token{Type: 3, Value: "expr2"}, Pos: TokenPos{Line: 3, Pos: 2}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 3, Pos: 7}},
-		&TokenWithPos{Token: lexer.Token{Type: 23, Value: ":="}, Pos: TokenPos{Line: 3, Pos: 8}},
-		&TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 3, Pos: 10}},
-		&TokenWithPos{Token: lexer.Token{Type: 4, Value: "\"other\""}, Pos: TokenPos{Line: 3, Pos: 11}},
-		&TokenWithPos{Token: lexer.Token{Type: 6, Value: "\n"}, Pos: TokenPos{Line: 3, Pos: 18}},
-		&TokenWithPos{Token: lexer.Token{Type: 46, Value: "}"}, Pos: TokenPos{Line: 4, Pos: 0}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WordToken, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenOpenToken, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenCloseToken, Value: ")"}, Pos: TokenPos{Line: 1, Pos: 12}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 1, Pos: 13}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.BraceOpenToken, Value: "{"}, Pos: TokenPos{Line: 1, Pos: 14}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, Pos: TokenPos{Line: 1, Pos: 15}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, Pos: TokenPos{Line: 2, Pos: 0}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, Pos: TokenPos{Line: 2, Pos: 1}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.VarToken, Value: "var"}, Pos: TokenPos{Line: 2, Pos: 2}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 2, Pos: 5}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WordToken, Value: "expr"}, Pos: TokenPos{Line: 2, Pos: 6}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 2, Pos: 10}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.StringToken, Value: "string"}, Pos: TokenPos{Line: 2, Pos: 11}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 2, Pos: 17}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.AssignToken, Value: "="}, Pos: TokenPos{Line: 2, Pos: 18}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 2, Pos: 19}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.TextToken, Value: "\"some\""}, Pos: TokenPos{Line: 2, Pos: 20}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, Pos: TokenPos{Line: 2, Pos: 26}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, Pos: TokenPos{Line: 3, Pos: 0}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: "\t"}, Pos: TokenPos{Line: 3, Pos: 1}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WordToken, Value: "expr2"}, Pos: TokenPos{Line: 3, Pos: 2}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 3, Pos: 7}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.TypeAssignToken, Value: ":="}, Pos: TokenPos{Line: 3, Pos: 8}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 3, Pos: 10}},
+		&TokenWithPos{Token: lexer.Token{Type: genericlexer.TextToken, Value: "\"other\""}, Pos: TokenPos{Line: 3, Pos: 11}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.NlToken, Value: "\n"}, Pos: TokenPos{Line: 3, Pos: 18}},
+		&TokenWithPos{Token: lexer.Token{Type: glanglexer.BraceCloseToken, Value: "}"}, Pos: TokenPos{Line: 4, Pos: 0}},
 	}
 
 	c := 0
@@ -109,7 +109,7 @@ func TestNext(t *testing.T) {
 	interpret := NewInterpreter(d)
 
 	got := interpret.Next()
-	want := &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	want := &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
@@ -255,33 +255,33 @@ func TestFlush(t *testing.T) {
 	interpret := NewInterpreter(d)
 
 	interpret.Flush()
-	want := &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	want := &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 	got := interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
 		fmt.Printf("got %#v\n", got)
 	}
 	interpret.Flush()
-	want = &TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}}
+	want = &TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}}
 	got = interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
 		fmt.Printf("got %#v\n", got)
 	}
-	want = &TokenWithPos{Token: lexer.Token{Type: 3, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}}
+	want = &TokenWithPos{Token: lexer.Token{Type: genericlexer.WordToken, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}}
 	got = interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
 		fmt.Printf("got %#v\n", got)
 	}
 	interpret.Flush()
-	want = &TokenWithPos{Token: lexer.Token{Type: 20, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenOpenToken, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
 	got = interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
 		fmt.Printf("got %#v\n", got)
 	}
-	want = &TokenWithPos{Token: lexer.Token{Type: 21, Value: ")"}, Pos: TokenPos{Line: 1, Pos: 12}}
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenCloseToken, Value: ")"}, Pos: TokenPos{Line: 1, Pos: 12}}
 	got = interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
@@ -289,14 +289,14 @@ func TestFlush(t *testing.T) {
 	}
 	interpret.Rewind()
 	interpret.Rewind()
-	want = &TokenWithPos{Token: lexer.Token{Type: 20, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenOpenToken, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
 	got = interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
 		fmt.Printf("got %#v\n", got)
 	}
 	interpret.Flush()
-	want = &TokenWithPos{Token: lexer.Token{Type: 21, Value: ")"}, Pos: TokenPos{Line: 1, Pos: 12}}
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenCloseToken, Value: ")"}, Pos: TokenPos{Line: 1, Pos: 12}}
 	got = interpret.Next()
 	if !compareToken(t, 0, want, got) {
 		fmt.Printf("want %#v\n", want)
@@ -350,7 +350,7 @@ func TestPeekOne(t *testing.T) {
 	d := stringTokenizer(str)
 	interpret := NewInterpreter(d)
 
-	want := &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	want := &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 	got := interpret.PeekOne()
 	compareToken(t, 0, want, got)
 
@@ -363,7 +363,7 @@ func TestPeekOne(t *testing.T) {
 
 	interpret.ReadN(2)
 
-	want = &TokenWithPos{Token: lexer.Token{Type: 3, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}}
+	want = &TokenWithPos{Token: lexer.Token{Type: genericlexer.WordToken, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}}
 	got = interpret.PeekOne()
 	compareToken(t, 0, want, got)
 
@@ -384,7 +384,7 @@ func TestPeekN(t *testing.T) {
 	d := stringTokenizer(str)
 	interpret := NewInterpreter(d)
 
-	want := &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	want := &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 	got := interpret.PeekN(1)
 	compareToken(t, 0, want, got[0])
 
@@ -397,7 +397,7 @@ func TestPeekN(t *testing.T) {
 
 	interpret.ReadN(2)
 
-	want = &TokenWithPos{Token: lexer.Token{Type: 3, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}}
+	want = &TokenWithPos{Token: lexer.Token{Type: genericlexer.WordToken, Value: "tomate"}, Pos: TokenPos{Line: 1, Pos: 5}}
 	got = interpret.PeekN(1)
 	compareToken(t, 0, want, got[0])
 
@@ -421,19 +421,19 @@ func TestPeek(t *testing.T) {
 	got := interpret.Peek()
 	compareToken(t, 0, nil, got)
 
-	got = interpret.Peek(17)
-	want := &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	got = interpret.Peek(glanglexer.FuncToken)
+	want := &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 	compareToken(t, 0, want, got)
 
 	interpret.Next()
 
-	got = interpret.Peek(17)
+	got = interpret.Peek(glanglexer.FuncToken)
 	compareToken(t, 0, nil, got)
 
 	interpret.Emit()
 
-	want = &TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}}
-	got = interpret.Peek(0)
+	want = &TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}}
+	got = interpret.Peek(genericlexer.WsToken)
 	compareToken(t, 0, want, got)
 
 	igot := len(interpret.Current())
@@ -445,8 +445,8 @@ func TestPeek(t *testing.T) {
 
 	interpret.ReadN(2)
 
-	want = &TokenWithPos{Token: lexer.Token{Type: 20, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
-	got = interpret.Peek(20)
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenOpenToken, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
+	got = interpret.Peek(glanglexer.ParenOpenToken)
 	compareToken(t, 0, want, got)
 
 	igot = len(interpret.Current())
@@ -470,22 +470,22 @@ func TestPeekUntil(t *testing.T) {
 	compareToken(t, 0, nil, got)
 
 	got = interpret.PeekOne()
-	want := &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	want := &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 	compareToken(t, 0, want, got)
 
-	got = interpret.PeekUntil(17)
-	want = &TokenWithPos{Token: lexer.Token{Type: 17, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
+	got = interpret.PeekUntil(glanglexer.FuncToken)
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.FuncToken, Value: "func"}, Pos: TokenPos{Line: 1, Pos: 0}}
 	compareToken(t, 0, want, got)
 
 	interpret.Next()
 
-	got = interpret.PeekUntil(17)
+	got = interpret.PeekUntil(glanglexer.FuncToken)
 	compareToken(t, 0, nil, got)
 
 	interpret.Emit()
 
-	want = &TokenWithPos{Token: lexer.Token{Type: 0, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}}
-	got = interpret.PeekUntil(0)
+	want = &TokenWithPos{Token: lexer.Token{Type: genericlexer.WsToken, Value: " "}, Pos: TokenPos{Line: 1, Pos: 4}}
+	got = interpret.PeekUntil(genericlexer.WsToken)
 	compareToken(t, 0, want, got)
 
 	igot := len(interpret.Current())
@@ -497,8 +497,8 @@ func TestPeekUntil(t *testing.T) {
 
 	interpret.ReadN(2)
 
-	want = &TokenWithPos{Token: lexer.Token{Type: 20, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
-	got = interpret.PeekUntil(20)
+	want = &TokenWithPos{Token: lexer.Token{Type: glanglexer.ParenOpenToken, Value: "("}, Pos: TokenPos{Line: 1, Pos: 11}}
+	got = interpret.PeekUntil(glanglexer.ParenOpenToken)
 	compareToken(t, 0, want, got)
 
 	igot = len(interpret.Current())
