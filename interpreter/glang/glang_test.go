@@ -788,6 +788,50 @@ else{}
 	interpret.GetMany(glanglexer.NlToken)
 }
 
+func TestReadSwitchStmt(t *testing.T) {
+	content := `switch{}
+switch zz {}
+switch x.(type) {}
+switch y, y := x.(type) {}
+switch u, u := x.(type) {
+case "rr":
+	fmt.Println("ok")
+}
+`
+	interpret := makeRawInterpreter(content)
+
+	block, err := interpret.ReadSwitchStmt(false)
+	mustNotErr(t, err)
+	bodyEq(t, block, "{}")
+	interpret.GetMany(glanglexer.NlToken)
+
+	interpret.blockscope.AddVar("zz")
+	block, err = interpret.ReadSwitchStmt(false)
+	mustNotErr(t, err)
+	condEq(t, block, "zz")
+	bodyEq(t, block, "{}")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadSwitchStmt(false)
+	mustNotErr(t, err)
+	condEq(t, block, "x.(type)")
+	bodyEq(t, block, "{}")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadSwitchStmt(false)
+	mustNotErr(t, err)
+	initEq(t, block, "y, y := x.(type) ")
+	bodyEq(t, block, "{}")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadSwitchStmt(false)
+	mustNotErr(t, err)
+	initEq(t, block, "u, u := x.(type) ")
+	branchEq(t, block, 0, "case \"rr\":\n\tfmt.Println(\"ok\")\n")
+	interpret.GetMany(glanglexer.NlToken)
+	// Dump(block)
+}
+
 func TestAssignExpr(t *testing.T) {
 	content := `x := "r"
 y := 5
@@ -936,6 +980,7 @@ func TestReadParenExpr(t *testing.T) {
 (true,
 false)
 (true true,)
+(type)
 `
 	interpret := makeRawInterpreter(content)
 
@@ -972,6 +1017,11 @@ false)
 	block, err = interpret.ReadParenExprBlock(false)
 	mustNotErr(t, err)
 	StringEq(t, block, "(true true,)")
+	interpret.GetMany(glanglexer.NlToken)
+
+	block, err = interpret.ReadParenExprBlock(false)
+	mustNotErr(t, err)
+	StringEq(t, block, "(type)")
 	interpret.GetMany(glanglexer.NlToken)
 
 	// Dump(block)
@@ -1196,6 +1246,15 @@ func initEq(t *testing.T, x glang.Initer, expected string) {
 	sgot := x.GetInit().String()
 	if swant != sgot {
 		t.Errorf("Unexpected init, got=%q, want=%q", sgot, swant)
+		t.FailNow()
+	}
+}
+
+func branchEq(t *testing.T, x glang.BlockBrancher, i int, expected string) {
+	swant := expected
+	sgot := x.GetBranch(i).String()
+	if swant != sgot {
+		t.Errorf("Unexpected branch %v, got=%q, want=%q", i, sgot, swant)
 		t.FailNow()
 	}
 }
@@ -1436,9 +1495,13 @@ func (s <:.Name>Slice) RemoveAt(i index) int {
 }
 
 func (s <:.Name>Slice) Remove(item <:.Name>) int {
-  if i:= s.Index(item); i > -1 {
-    s.RemoveAt(i)
-    return i
+  if x, ok := xx.(*MyType); ok {
+    switch ok.(type) {
+		case bool:
+			panic("bool")
+		default:
+			panic("not bool")
+		}
   }
   return -1
 }

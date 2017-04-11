@@ -748,11 +748,88 @@ func (I *GigoInterpreter) ReadExpressionsBlock(templated bool, open lexer.TokenT
 				}
 				ret.AddExpr(expr)
 
+			} else if I.Peek(glanglexer.SwitchToken) != nil {
+				expr, err := I.ReadSwitchStmt(templated)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(expr)
+
 			} else if I.Next() == nil {
 				return nil, I.Debug("require token", close)
 			}
 			// <-time.After(time.Second * 2)
 
+		}
+	}
+	ret.AddExprs(I.Emit())
+	return ret, nil
+}
+
+// ReadExpressionsBlockUntil ...
+func (I *GigoInterpreter) ReadExpressionsBlockUntil(templated bool, until ...lexer.TokenType) (*glang.BodyBlockDecl, error) {
+
+	var ret *glang.BodyBlockDecl
+
+	ret = glang.NewBodyBlockDecl()
+
+	I.blockscope.Enter()
+	defer I.blockscope.Leave()
+
+	for {
+		I.ReadWs(true, true, glanglexer.NlToken)
+		ret.AddExprs(I.Emit())
+
+		if I.Peek(until...) != nil {
+			break
+
+		} else {
+
+			if I.Peek(glanglexer.VarToken) != nil {
+				varDecl, err := I.ReadVarDecl(templated)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(varDecl)
+			} else if I.Peek(glanglexer.ReturnToken) != nil {
+				r, err := I.ReadReturnDecl(templated)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(r)
+
+			} else if I.Peek(genericlexer.WordToken) != nil {
+				x := append([]lexer.TokenType{glanglexer.NlToken}, until...)
+				expr, err := I.ReadExpressionBlock(templated, x...)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(expr)
+
+			} else if I.Peek(glanglexer.ForToken) != nil {
+				expr, err := I.ReadForBlock(templated)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(expr)
+
+			} else if I.Peek(glanglexer.IfToken) != nil {
+				expr, err := I.ReadIfStmt(templated)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(expr)
+
+			} else if I.Peek(glanglexer.SwitchToken) != nil {
+				expr, err := I.ReadSwitchStmt(templated)
+				if err != nil {
+					return nil, err
+				}
+				ret.AddExpr(expr)
+
+			} else if I.Next() == nil {
+				return nil, I.Debug("require token", until...)
+			}
 		}
 	}
 	ret.AddExprs(I.Emit())
@@ -1082,6 +1159,137 @@ func (I *GigoInterpreter) ReadElseStmt(templated bool) (*glang.ElseStmt, error) 
 		ret.AddExpr(body)
 	}
 
+	return ret, nil
+}
+
+// ReadSwitchStmt ...
+func (I *GigoInterpreter) ReadSwitchStmt(templated bool) (*glang.SwitchStmt, error) {
+	var ret *glang.SwitchStmt
+
+	if I.Read(glanglexer.SwitchToken) == nil {
+		return nil, I.Debug("unexpected token", glanglexer.SwitchToken)
+	}
+
+	ret = glang.NewSwitchStmt()
+	I.ReadWs(true, true)
+	ret.AddExprs(I.Emit())
+
+	whatis := I.PeekUntil(glanglexer.TypeAssignToken, glanglexer.BraceOpenToken)
+	I.RewindAll()
+
+	if whatis.GetType() == glanglexer.TypeAssignToken {
+		init, err := I.ReadAssignExpr(templated, false, glanglexer.BraceOpenToken)
+		if err != nil {
+			return nil, err
+		}
+		ret.SetInit(init)
+		ret.AddExpr(init)
+		I.blockscope.AddVar(init.CollectVarNames()...)
+	} else {
+		cond, err := I.ReadExpressionBlock(templated, glanglexer.BraceOpenToken)
+		if err != nil {
+			return nil, err
+		}
+		ret.SetCond(cond)
+		ret.AddExpr(cond)
+	}
+
+	I.ReadWs(true, true)
+	ret.AddExprs(I.Emit())
+
+	body, err := I.ReadBranchedStmtBlock(templated)
+	if err != nil {
+		return nil, err
+	}
+	ret.Body = body
+	ret.AddExpr(body)
+
+	I.ReadWs(true, true)
+	ret.AddExprs(I.Emit())
+
+	return ret, nil
+}
+
+// ReadBranchedStmtBlock ...
+func (I *GigoInterpreter) ReadBranchedStmtBlock(templated bool) (*glang.BranchedStmtBlock, error) {
+
+	var ret *glang.BranchedStmtBlock
+
+	open := glanglexer.BraceOpenToken
+	close := glanglexer.BraceCloseToken
+
+	openTok := I.Read(open)
+	if openTok == nil {
+		return nil, I.Debug("unexpected token", open)
+	}
+	count := 1
+
+	ret = glang.NewBranchedStmtBlock()
+
+	for {
+		if openTok := I.Read(open); openTok != nil {
+			count++
+
+		} else if closeTok := I.Read(close); closeTok != nil {
+			count--
+			if count == 0 {
+				I.Rewind()
+				break
+			}
+
+		} else {
+			I.ReadWs(true, true)
+			ret.AddExprs(I.Emit())
+
+			if I.Read(glanglexer.CaseToken) != nil {
+				branch := glang.NewBranchStmt()
+				branch.AddExprs(I.Emit())
+				ex, err := I.ReadExpressionBlock(templated, glanglexer.ColonToken)
+				if err != nil {
+					return nil, err
+				}
+				branch.AddExpr(ex)
+				branch.Cond = ex
+				I.Read(glanglexer.ColonToken)
+				branch.AddExprs(I.Emit())
+				body, err := I.ReadExpressionsBlockUntil(templated, close, glanglexer.CaseToken, glanglexer.DefaultToken, glanglexer.FallthroughToken)
+				if err != nil {
+					return nil, err
+				}
+				branch.AddExpr(body)
+				branch.Body = body
+				I.Read(glanglexer.FallthroughToken)
+				branch.AddExprs(I.Emit())
+				ret.AddExpr(branch)
+				ret.AddBranch(branch)
+
+			} else if I.Read(glanglexer.DefaultToken) != nil {
+
+				branch := glang.NewBranchStmt()
+				branch.AddExprs(I.Emit())
+				I.Read(glanglexer.ColonToken)
+				branch.AddExprs(I.Emit())
+				body, err := I.ReadExpressionsBlockUntil(templated, close, glanglexer.CaseToken, glanglexer.DefaultToken, glanglexer.FallthroughToken)
+				if err != nil {
+					return nil, err
+				}
+				branch.AddExpr(body)
+				branch.Body = body
+				I.Read(glanglexer.FallthroughToken)
+				branch.AddExprs(I.Emit())
+				ret.AddExpr(branch)
+				ret.AddBranch(branch)
+
+			} else if I.Read(glanglexer.NlToken) != nil {
+			} else {
+				return nil, I.DebugAtToken(I.PeekN(1)[0], "unexpected token", glanglexer.CaseToken, glanglexer.DefaultToken, glanglexer.FallthroughToken)
+			}
+		}
+	}
+	if I.Read(close) == nil {
+		return nil, I.Debug("unexpected token", close)
+	}
+	ret.AddExprs(I.Emit())
 	return ret, nil
 }
 
@@ -1488,7 +1696,7 @@ func (I *GigoInterpreter) ReadAssignExpr(
 			ret.AddExprs(I.Emit())
 
 		} else {
-			block, err := I.ReadExpressionBlock(templated, glanglexer.CommaToken)
+			block, err := I.ReadExpressionBlock(templated, glanglexer.CommaToken, glanglexer.BraceOpenToken)
 			if err != nil {
 				return nil, err
 			}
@@ -1601,17 +1809,25 @@ func (I *GigoInterpreter) ReadParenExprBlock(
 		} else {
 			ret.AddExprs(I.Emit())
 
-			block, err := I.ReadExpressionBlock(templated,
-				glanglexer.ParenCloseToken,
-				glanglexer.CommaToken,
-				glanglexer.ElipseToken,
-			)
+			var block *glang.ExpressionDecl
+			var err error
+			if I.Read(glanglexer.TypeToken) != nil {
+				block = glang.NewExpressionDecl()
+				block.AddExprs(I.Emit())
+			} else {
+				block, err = I.ReadExpressionBlock(templated,
+					glanglexer.ParenCloseToken,
+					glanglexer.CommaToken,
+					glanglexer.ElipseToken,
+				)
+			}
 			if err != nil {
 				return nil, err
 			}
-			ret.AddParam(block)
 			ret.AddExprs(I.Emit())
 			ret.AddExpr(block)
+
+			ret.AddParam(block)
 			I.ReadWs(true, true)
 		}
 	}
