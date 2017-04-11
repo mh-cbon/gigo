@@ -22,15 +22,10 @@ func TestReadNPrettyPrint(t *testing.T) {
 	interpret.Next()
 	interpret.Next()
 	x.Flush()
-	interpret.Next()
 
-	expected := `Line:Pos | TokenName:tok.Type | "tok.Value"
-1:0      | funcToken:17       | "func"
-1:4      | wsToken:0          | " "
-1:5      | wordToken:3        | "tomate"
-`
+	expected := "Line:Pos | TokenName:tok.Type | \"tok.Value\"\n1:0      | funcToken:60       | \"func\"\n1:4      | WsToken:0          | \" \"\n1:5      | WordToken:3        | \"tomate\"\n"
 
 	if buf.String() != expected {
-		t.Errorf("Unexpected Prettyprint output\nwant=%q\ngot =%q", expected, buf.String())
+		t.Errorf("Unexpected Prettyprint output\nwant=\n%q--\ngot=\n%q--", expected, buf.String())
 	}
 }
