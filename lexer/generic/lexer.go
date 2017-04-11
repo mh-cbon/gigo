@@ -16,26 +16,35 @@ const (
 	EOFToken
 )
 
+// UnknownTokenLabel is the label for unknow ntokens.
+const UnknownTokenLabel = "token unknown"
+
 // TokenName Helper function
 func TokenName(tok lexer.Token) string {
-	return TokenType(tok.Type)
+	ret := TokenType(tok.Type)
+	if ret == UnknownTokenLabel {
+		ret = tok.Value + " " + ret
+	}
+	return ret
 }
 
 // TokenType Helper function
 func TokenType(Type lexer.TokenType) string {
 	switch Type {
 	case WsToken:
-		return "wsToken"
+		return "WsToken"
 	case CommentBlockToken:
-		return "commentBlockToken"
+		return "CommentBlockToken"
 	case CommentLineToken:
-		return "commentLineToken"
+		return "CommentLineToken"
 	case WordToken:
-		return "wordToken"
+		return "WordToken"
 	case TextToken:
-		return "textToken"
+		return "TextToken"
+	case EOFToken:
+		return "EOFToken"
 	}
-	return "token unknown"
+	return UnknownTokenLabel
 }
 
 // NotWs Helper function
