@@ -20,21 +20,23 @@ func DumpWithNamer(src Expressioner, typer TokenTyper, lvl int) {
 	exprs := src.GetExprs()
 	for i, e := range exprs {
 		if len(e.GetExprs()) == 0 {
-			tok := e.GetTokens()[0]
-			yy := ""
-			if len(src.GetExprs()) == 1 {
-				yy = fmt.Sprintf("=> %v %v token", T, len(src.GetExprs()))
-			} else if i == 0 {
-				yy = fmt.Sprintf("-> %v %v tokens", T, len(src.GetExprs()))
-			} else if i == len(src.GetExprs())-1 {
-				yy = fmt.Sprintf("<- %v", T)
-			}
-			fmt.Printf("%-40v", x+yy)
+			if len(e.GetTokens()) > 0 {
+				tok := e.GetTokens()[0]
+				yy := ""
+				if len(src.GetExprs()) == 1 {
+					yy = fmt.Sprintf("=> %v %v token", T, len(src.GetExprs()))
+				} else if i == 0 {
+					yy = fmt.Sprintf("-> %v %v tokens", T, len(src.GetExprs()))
+				} else if i == len(src.GetExprs())-1 {
+					yy = fmt.Sprintf("<- %v", T)
+				}
+				fmt.Printf("%-40v", x+yy)
 
-			fmt.Printf("%-8v%-20v %q\n",
-				tok.GetPos().String(),
-				typer(tok.GetType()),
-				tok.GetValue())
+				fmt.Printf("%-8v%-20v %q\n",
+					tok.GetPos().String(),
+					typer(tok.GetType()),
+					tok.GetValue())
+			}
 		} else {
 			if i == 0 {
 				yy := fmt.Sprintf("-> %v %v tokens", T, len(src.GetExprs()))
