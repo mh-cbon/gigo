@@ -36,7 +36,8 @@ func (I *Interpreter) Next() Tokener {
 		I.try++
 		// this helps to avoid infinite loops, on the other hand it limits size of tokens.
 		if I.try > 10000 {
-			err := I.Debug("Inifinite loop detected")
+			n := I.Tokens[len(I.Tokens)-1]
+			err := I.DebugAtToken(n, "Inifinite loop detected")
 			fmt.Printf("%+v\n\n", err)
 			fmt.Printf("%#v", err)
 			os.Exit(1)
@@ -257,20 +258,26 @@ func (I *Interpreter) ReadBlock(open lexer.TokenType, close lexer.TokenType) []T
 
 // Debug produces a SyntaxError when unexpected tokens are found.
 func (I *Interpreter) Debug(reason string, wantedTypes ...lexer.TokenType) error {
-	wanted := []string{}
-	for _, w := range wantedTypes {
-		wanted = append(wanted, I.Namer(w))
-	}
 	n := I.Last()
 	if n == nil {
 		n = I.Next()
 		I.Rewind()
 	}
 
-	if n == nil {
-		// tbd adjust the position
-		n = NewTokenEOF()
+	return I.DebugAtToken(n, reason, wantedTypes...)
+}
+
+// DebugAtToken produces a SyntaxError at token T.
+func (I *Interpreter) DebugAtToken(atToken Tokener, reason string, wantedTypes ...lexer.TokenType) error {
+	wanted := []string{}
+	for _, w := range wantedTypes {
+		wanted = append(wanted, I.Namer(w))
 	}
-	got := I.Namer(n.GetType())
-	return I.Scope.FinalizeErr(NewParseError(errors.New(reason), n, got, wanted))
+
+	if atToken == nil {
+		// tbd adjust the position
+		atToken = NewTokenEOF()
+	}
+	got := I.Namer(atToken.GetType())
+	return I.Scope.FinalizeErr(NewParseError(errors.New(reason), atToken, got, wanted))
 }
