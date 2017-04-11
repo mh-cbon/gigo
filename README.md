@@ -231,35 +231,35 @@ Or you can dump the tokenizer output
 ###### $ go run main.go -symbol Push dump demo.gigo.go
 ```sh
 -> FuncDecl 11 tokens                    56:0   nlToken              "\n"
-                                         57:0   commentLineToken     "// create new Method Push of type ."
+                                         57:0   CommentLineToken     "// create new Method Push of type ."
                                          57:35  nlToken              "\n"
                                          58:0   funcToken            "func"
-                                         58:4   wsToken              " "
+                                         58:4   WsToken              " "
  -> PropsBlockDecl 3 tokens              58:5   parenOpenToken       "("
   -> PropDecl 3 tokens                  
-   => IdentifierDecl 1 token             58:6   wordToken            "s"
-                                         58:7   wsToken              " "
+   => IdentifierDecl 1 token             58:6   WordToken            "s"
+                                         58:7   WsToken              " "
    -> ExpressionDecl 1 tokens           
     -> IdentifierDecl 2 tokens          
      -> BodyBlockDecl 4 tokens           58:8   TplOpenToken         "<:"
                                          58:10  DotToken             "."
-                                         58:11  wordToken            "Name"
+                                         58:11  WordToken            "Name"
      <- BodyBlockDecl                    58:15  TplCloseToken        ">"
-    <- IdentifierDecl                    58:16  wordToken            "Slice"
+    <- IdentifierDecl                    58:16  WordToken            "Slice"
    <- ExpressionDecl 1 tokens           
   <- PropDecl 3 tokens                  
  <- PropsBlockDecl                       58:21  parenCloseToken      ")"
-                                         58:22  wsToken              " "
- => IdentifierDecl 1 token               58:23  wordToken            "Push"
+                                         58:22  WsToken              " "
+ => IdentifierDecl 1 token               58:23  WordToken            "Push"
  -> PropsBlockDecl 3 tokens              58:27  parenOpenToken       "("
   -> PropDecl 3 tokens                  
-   => IdentifierDecl 1 token             58:28  wordToken            "item"
-                                         58:32  wsToken              " "
+   => IdentifierDecl 1 token             58:28  WordToken            "item"
+                                         58:32  WsToken              " "
    -> ExpressionDecl 1 tokens           
     -> IdentifierDecl 1 tokens          
      -> BodyBlockDecl 4 tokens           58:33  TplOpenToken         "<:"
                                          58:35  DotToken             "."
-                                         58:36  wordToken            "Name"
+                                         58:36  WordToken            "Name"
      <- BodyBlockDecl                    58:40  TplCloseToken        ">"
     <- IdentifierDecl 1 tokens          
    <- ExpressionDecl 1 tokens           
@@ -267,51 +267,51 @@ Or you can dump the tokenizer output
  <- PropsBlockDecl                       58:41  parenCloseToken      ")"
  -> PropsBlockDecl 1 tokens             
   -> ExpressionDecl 1 tokens            
-   -> IdentifierDecl 2 tokens            58:42  wsToken              " "
+   -> IdentifierDecl 2 tokens            58:42  WsToken              " "
    <- IdentifierDecl                     58:43  IntToken             "int"
   <- ExpressionDecl 1 tokens            
  <- PropsBlockDecl 1 tokens             
- -> BodyBlockDecl 11 tokens              58:46  wsToken              " "
+ -> BodyBlockDecl 11 tokens              58:46  WsToken              " "
                                          58:47  BraceOpenToken       "{"
                                          58:48  nlToken              "\n"
-                                         59:0   wsToken              " "
-                                         59:1   wsToken              " "
+                                         59:0   WsToken              " "
+                                         59:1   WsToken              " "
   -> ExpressionDecl 4 tokens            
-   -> IdentifierDecl 3 tokens            59:2   wordToken            "s"
+   -> IdentifierDecl 3 tokens            59:2   WordToken            "s"
                                          59:3   DotToken             "."
-   <- IdentifierDecl                     59:4   wordToken            "items"
-                                         59:9   wsToken              " "
+   <- IdentifierDecl                     59:4   WordToken            "items"
+                                         59:9   WsToken              " "
                                          59:10  assignToken          "="
    -> CallExpr 2 tokens                 
-    -> IdentifierDecl 2 tokens           59:11  wsToken              " "
-    <- IdentifierDecl                    59:12  wordToken            "append"
+    -> IdentifierDecl 2 tokens           59:11  WsToken              " "
+    <- IdentifierDecl                    59:12  WordToken            "append"
     -> CallExprBlock 6 tokens            59:18  parenOpenToken       "("
      -> ExpressionDecl 1 tokens         
-      -> IdentifierDecl 3 tokens         59:19  wordToken            "s"
+      -> IdentifierDecl 3 tokens         59:19  WordToken            "s"
                                          59:20  DotToken             "."
-      <- IdentifierDecl                  59:21  wordToken            "items"
+      <- IdentifierDecl                  59:21  WordToken            "items"
      <- ExpressionDecl 1 tokens         
                                          59:26  CommaToken           ","
-                                         59:27  wsToken              " "
+                                         59:27  WsToken              " "
      -> ExpressionDecl 1 tokens         
-      => IdentifierDecl 1 token          59:28  wordToken            "item"
+      => IdentifierDecl 1 token          59:28  WordToken            "item"
      <- ExpressionDecl 1 tokens         
     <- CallExprBlock                     59:32  parenCloseToken      ")"
    <- CallExpr 2 tokens                 
   <- ExpressionDecl 4 tokens            
                                          59:33  nlToken              "\n"
-                                         60:0   wsToken              " "
-                                         60:1   wsToken              " "
+                                         60:0   WsToken              " "
+                                         60:1   WsToken              " "
   -> ReturnDecl 4 tokens                 60:2   returnToken          "return"
-                                         60:8   wsToken              " "
+                                         60:8   WsToken              " "
    -> ExpressionDecl 1 tokens           
     -> CallExpr 2 tokens                
-     => IdentifierDecl 1 token           60:9   wordToken            "len"
+     => IdentifierDecl 1 token           60:9   WordToken            "len"
      -> CallExprBlock 3 tokens           60:12  parenOpenToken       "("
       -> ExpressionDecl 1 tokens        
-       -> IdentifierDecl 3 tokens        60:13  wordToken            "s"
+       -> IdentifierDecl 3 tokens        60:13  WordToken            "s"
                                          60:14  DotToken             "."
-       <- IdentifierDecl                 60:15  wordToken            "items"
+       <- IdentifierDecl                 60:15  WordToken            "items"
       <- ExpressionDecl 1 tokens        
      <- CallExprBlock                    60:20  parenCloseToken      ")"
     <- CallExpr 2 tokens                
