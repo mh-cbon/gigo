@@ -883,6 +883,16 @@ type Conder interface {
 type Bodyer interface {
 	GetBody() *BodyBlockDecl
 }
+type HeaderStmter interface {
+	SetInit(*AssignExpr)
+	SetCond(genericinterperter.Tokener) // Why is FOR header using an *ExpressionDecl ?
+	AddExpr(expr genericinterperter.Tokener)
+	AddExprs(exprs []genericinterperter.Tokener)
+}
+type HeaderStmtExpressioner interface {
+	genericinterperter.Expressioner
+	HeaderStmter
+}
 
 type Stmter interface {
 	String() string // ?
@@ -896,6 +906,12 @@ type ForStmt struct {
 	Body *BodyBlockDecl
 }
 
+func (p *ForStmt) SetInit(x *AssignExpr) {
+	p.Init = x
+}
+func (p *ForStmt) SetCond(x *ExpressionDecl) { // weird.
+	p.Cond = x
+}
 func (p *ForStmt) String() string {
 	return p.Expression.String()
 }
@@ -924,6 +940,12 @@ type IfStmt struct {
 	Else *ElseStmt
 }
 
+func (p *IfStmt) SetInit(x *AssignExpr) {
+	p.Init = x
+}
+func (p *IfStmt) SetCond(x genericinterperter.Tokener) {
+	p.Cond = x
+}
 func (p *IfStmt) GetInit() *AssignExpr {
 	return p.Init
 }
@@ -951,6 +973,110 @@ type ElseStmt struct {
 // NewElseStmt creates a new ElseStmt
 func NewElseStmt() *ElseStmt {
 	return &ElseStmt{}
+}
+
+type SwitchStmt struct {
+	genericinterperter.Expression
+	Init *AssignExpr
+	Cond genericinterperter.Tokener
+	Body *BranchedStmtBlock
+}
+
+func (p *SwitchStmt) SetInit(x *AssignExpr) {
+	p.Init = x
+}
+func (p *SwitchStmt) SetCond(x genericinterperter.Tokener) {
+	p.Cond = x
+}
+func (p *SwitchStmt) GetInit() *AssignExpr {
+	return p.Init
+}
+func (p *SwitchStmt) GetBody() *BodyBlockDecl {
+	return &p.Body.BodyBlockDecl
+}
+func (p *SwitchStmt) GetBranches() *BranchedStmtBlock {
+	return p.Body
+}
+
+func (p *SwitchStmt) GetBranch(i int) *BranchStmt {
+	if i >= len(p.Body.Branches) {
+		return nil
+	}
+	return p.Body.Branches[i]
+}
+func (p *SwitchStmt) GetCond() genericinterperter.Tokener {
+	return p.Cond
+}
+
+// NewSwitchStmt creates a new SwitchStmt
+func NewSwitchStmt() *SwitchStmt {
+	return &SwitchStmt{}
+}
+
+type BlockBrancher interface {
+	GetBranches() *BranchedStmtBlock
+	GetBranch(int) *BranchStmt
+}
+
+type BranchedStmtBlock struct {
+	BodyBlockDecl
+	Branches []*BranchStmt
+}
+
+func (p *BranchedStmtBlock) AddBranch(branch *BranchStmt) {
+	p.Branches = append(p.Branches, branch)
+}
+
+// NewBranchedStmtBlock creates a new BranchedStmtBlock
+func NewBranchedStmtBlock() *BranchedStmtBlock {
+	return &BranchedStmtBlock{}
+}
+
+type BranchStmt struct {
+	genericinterperter.Expression
+	Cond genericinterperter.Tokener
+	Body *BodyBlockDecl
+}
+
+func (p *BranchStmt) SetCond(x genericinterperter.Tokener) {
+	p.Cond = x
+}
+func (p *BranchStmt) GetBody() *BodyBlockDecl {
+	return p.Body
+}
+
+// NewBranchStmt creates a new BranchStmt
+func NewBranchStmt() *BranchStmt {
+	return &BranchStmt{}
+}
+
+type WithStmt struct {
+	genericinterperter.Expression
+	Init *AssignExpr
+	Cond genericinterperter.Tokener
+	Body *BodyBlockDecl
+}
+
+func (p *WithStmt) SetInit(x *AssignExpr) {
+	p.Init = x
+}
+func (p *WithStmt) SetCond(x genericinterperter.Tokener) {
+	p.Cond = x
+}
+func (p *WithStmt) GetInit() *AssignExpr {
+	return p.Init
+}
+func (p *WithStmt) GetBody() *BodyBlockDecl {
+	return p.Body
+}
+
+func (p *WithStmt) GetCond() genericinterperter.Tokener {
+	return p.Cond
+}
+
+// NewWithStmt creates a new WithStmt
+func NewWithStmt() *WithStmt {
+	return &WithStmt{}
 }
 
 type BinaryExpr struct {
