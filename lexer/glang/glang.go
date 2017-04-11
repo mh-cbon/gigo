@@ -7,28 +7,38 @@ import (
 
 // tokens for a golang source code.
 const (
-	NumberToken lexer.TokenType = generic.TextToken + iota + 1
+	NumberToken lexer.TokenType = generic.TextToken + 50 + iota
 	NlToken
 
 	PackageToken
-
-	TypeToken
-	StructToken
-	ImplementsToken
-	TemplateToken
 	ImportToken
-	InterfaceToken
 
 	ConstToken
-	ConstNameToken
 	VarToken
-
 	FuncToken
+	TemplateToken
+
+	TypeToken
+	InterfaceToken
+	StructToken
+	ImplementsToken
+	PoireauToken
+	PoireauPointerToken
+
+	IfToken
+	ElseToken
+	ForToken
+	WithToken
+	SwitchToken
 
 	BracketOpenToken
 	BracketCloseToken
 	ParenOpenToken
 	ParenCloseToken
+	BraceOpenToken
+	BraceCloseToken
+
+	ElipseToken
 
 	AssignToken
 	TypeAssignToken
@@ -43,26 +53,6 @@ const (
 	ColonToken
 	SemiColonToken
 	CommaToken
-
-	ReturnToken
-	ForToken
-	RangeToken
-	DeferToken
-	ElseToken
-	IfToken
-	ElipseToken
-	TplOpenToken
-	TplCloseToken
-
-	PoireauToken
-	PoireauPointerToken
-
-	BraceOpenToken
-	BraceCloseToken
-
-	TrueToken
-	FalseToken
-	//-
 
 	AddToken
 	SubToken
@@ -96,14 +86,20 @@ const (
 	DecToken
 	DotToken
 
+	TplOpenToken
+	TplCloseToken
+	MapToken
 	ChanToken
-	BreakToken
+	RangeToken
 	ContinueToken
 	GoToken
+	DeferToken
 	GotoToken
-	MapToken
 	FallthroughToken
 	DefaultToken
+	CaseToken
+	BreakToken
+	ReturnToken
 
 	StringToken
 	IntToken
@@ -119,26 +115,43 @@ const (
 	FloatToken
 	Float32Token
 	Float64Token
+
+	TrueToken
+	FalseToken
+
+	ConstNameToken
+
+	EOFToken // re declare EOF, so anyone depending on this package can declare its own const starting here.
 )
 
 // TokenName Helper function
 func TokenName(tok lexer.Token) string {
-	return TokenType(tok.Type)
+	ret := TokenType(tok.Type)
+	if ret == generic.UnknownTokenLabel {
+		ret = tok.Value + " " + ret
+	}
+	return ret
 }
 
 // TokenType Helper function
 func TokenType(Type lexer.TokenType) string {
 	ret := generic.TokenType(Type)
-	if ret != "token unknown" {
+	if ret != generic.UnknownTokenLabel {
 		return ret
 	}
 	switch Type {
+	case EOFToken:
+		return "EOFToken"
 	case TrueToken:
 		return "TrueToken"
+	case CaseToken:
+		return "CaseToken"
 	case FalseToken:
 		return "FalseToken"
 	case NumberToken:
 		return "numberToken"
+	case SwitchToken:
+		return "SwitchToken"
 	case VarToken:
 		return "varToken"
 	case ConstNameToken:
@@ -328,7 +341,7 @@ func TokenType(Type lexer.TokenType) string {
 	case Float64Token:
 		return "Float64Token"
 	}
-	return "token unknown"
+	return generic.UnknownTokenLabel
 }
 
 // New ...
@@ -433,6 +446,8 @@ func New() *generic.Lexer {
 			generic.Word{Value: "fallthrough", Type: FallthroughToken, TextWord: true},
 			generic.Word{Value: "default", Type: DefaultToken, TextWord: true},
 			generic.Word{Value: "if", Type: IfToken, TextWord: true},
+			generic.Word{Value: "switch", Type: SwitchToken, TextWord: true},
+			generic.Word{Value: "case", Type: CaseToken, TextWord: true},
 			generic.Word{Value: "true", Type: TrueToken, TextWord: true}, // the real one, neo.
 			generic.Word{Value: "false", Type: FalseToken, TextWord: true},
 			generic.Word{Value: "for", Type: ForToken, TextWord: true},
