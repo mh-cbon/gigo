@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	xxxToken lexer.TokenType = iota
+	xxxToken lexer.TokenType = glang.EOFToken + 50 + iota
 )
 
 // TokenName Helper function
