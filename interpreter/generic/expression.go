@@ -36,48 +36,69 @@ type TokenWithPos struct {
 	Pos TokenPos
 }
 
+//SetValue implements Tokener.
 func (f *TokenWithPos) SetValue(s string) {
 	f.Value = s
 }
+
+//SetType implements Tokener.
 func (f *TokenWithPos) SetType(s lexer.TokenType) {
 	f.Type = s
 }
+
+//GetExprs implements Expressioner. its a noop.
 func (f *TokenWithPos) GetExprs() []Expressioner {
 	return []Expressioner{}
 }
+
+//GetTokens implements Expressioner. returns an array of one token.
 func (f *TokenWithPos) GetTokens() []Tokener {
 	return []Tokener{f}
 }
+
+//GetToken implements Expressioner. returns the token if its type matches T.
 func (f *TokenWithPos) GetToken(T lexer.TokenType) Tokener {
 	if f.GetType() == T {
 		return f
 	}
 	return nil
 }
+
+//GetPos implements Expressioner.
 func (f *TokenWithPos) GetPos() TokenPos {
 	return f.Pos
 }
+
+//HasToken implements Expressioner. returns true if token type is T.
 func (f *TokenWithPos) HasToken(T lexer.TokenType) bool {
 	return f.Type == T
 }
-func (f *TokenWithPos) Remove(e Expressioner) bool {
-	return false
-}
-func (f *TokenWithPos) PrependExpr(expr Tokener) {
-}
-func (f *TokenWithPos) PrependExprs(exprs []Tokener) {
-}
+
+//Remove implements Expressioner. It is a noop.
+func (f *TokenWithPos) Remove(e Expressioner) bool { return false }
+
+//PrependExpr implements Expressioner. It is a noop.
+func (f *TokenWithPos) PrependExpr(expr Tokener) {}
+
+//PrependExprs implements Expressioner. It is a noop.
+func (f *TokenWithPos) PrependExprs(exprs []Tokener) {}
+
+//SetTokenValue implements Expressioner. It changes value of the token if its type matches T.
 func (f *TokenWithPos) SetTokenValue(T lexer.TokenType, v string) {
 	if f.GetType() == T {
 		f.SetValue(v)
 	}
 }
+
+//GetTokensAtLine implements Expressioner. It returns the tokens if its pos matches line.
 func (f *TokenWithPos) GetTokensAtLine(line int) []Tokener {
 	if f.Pos.Line == line {
 		return []Tokener{f}
 	}
 	return []Tokener{}
 }
+
+//FindAll implements Expressioner. It returns the token if its type matches T.
 func (f *TokenWithPos) FindAll(T lexer.TokenType) []Expressioner {
 	if f.GetType() == T {
 		return []Expressioner{f}
@@ -85,6 +106,7 @@ func (f *TokenWithPos) FindAll(T lexer.TokenType) []Expressioner {
 	return []Expressioner{}
 }
 
+// NewTokenWithPos creates a positionned Tokener of token.
 func NewTokenWithPos(t lexer.Token, line, pos int) *TokenWithPos {
 	return &TokenWithPos{
 		Token: t,
@@ -95,10 +117,12 @@ func NewTokenWithPos(t lexer.Token, line, pos int) *TokenWithPos {
 	}
 }
 
+// NewTokenEOF creates an EOF Tokener.
 func NewTokenEOF() *TokenWithPos {
 	return NewTokenWithPos(lexer.Token{Type: genericlexer.EOFToken}, -1, -1)
 }
 
+// Tokener is an interface that defiens methods to change value of an underlyong token.
 type Tokener interface {
 	GetType() lexer.TokenType
 	GetValue() string
@@ -108,6 +132,7 @@ type Tokener interface {
 	GetPos() TokenPos
 }
 
+// Expressioner is an interface that defines methods to manipulate a token of tokens.
 type Expressioner interface {
 	GetExprs() []Expressioner
 	GetTokens() []Tokener
@@ -122,6 +147,7 @@ type Expressioner interface {
 	FindAll(lexer.TokenType) []Expressioner
 }
 
+// Expression isa  token of tokens.
 type Expression struct {
 	Tokens []Tokener
 }
@@ -337,32 +363,23 @@ func (f *Expression) FindAll(T lexer.TokenType) []Expressioner {
 	return ret
 }
 
+// AddExpr appends a Tokener
 func (f *Expression) AddExpr(expr Tokener) {
-	if expr == nil || expr == Tokener(nil) {
-		panic("rrr")
-	}
 	f.Tokens = append(f.Tokens, expr)
 }
+
+// AddExprs appends many Tokener
 func (f *Expression) AddExprs(exprs []Tokener) {
-	for _, expr := range exprs {
-		if expr == nil || expr == Tokener(nil) {
-			panic("rrr")
-		}
-	}
 	f.Tokens = append(f.Tokens, exprs...)
 }
+
+// PrependExpr prepends a Tokener
 func (f *Expression) PrependExpr(expr Tokener) {
-	if expr == nil || expr == Tokener(nil) {
-		panic("rrr")
-	}
 	f.Tokens = append([]Tokener{expr}, f.Tokens...)
 }
+
+// PrependExprs prepends many Tokener
 func (f *Expression) PrependExprs(exprs []Tokener) {
-	for _, expr := range exprs {
-		if expr == nil || expr == Tokener(nil) {
-			panic("rrr")
-		}
-	}
 	f.Tokens = append(exprs, f.Tokens...)
 }
 func (f *Expression) String() string {
