@@ -159,11 +159,17 @@ func (f *StringSyntaxError) Format(s fmt.State, verb rune) {
 // PrettyPrint a syntax error
 func (f *StringSyntaxError) PrettyPrint() string {
 	lines := strings.Split(f.Src, "\n")
+	i := f.line
+	startAt := 0
+	if i > 4 {
+		lines = lines[i-4 : i+4]
+		startAt = i - 4
+	}
 	for i := range lines {
 		lines[i] += "\n"
 	}
 	str := fmt.Sprintln(f.Error())
-	str += fmt.Sprintf("\n\n%v", f.ParseError.PrettyPrint(lines, 0))
+	str += fmt.Sprintf("\n\n%v", f.ParseError.PrettyPrint(lines, startAt))
 	return str
 }
 
