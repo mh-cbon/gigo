@@ -2,6 +2,19 @@ package main
 
 // other ideas
 
+// keyword to: forbid dereference of a pointer
+// https://groups.google.com/forum/#!topic/golang-nuts/zlGzLYMGRPo
+//
+// pointer keyword would say that the new type should always be a pointer
+// and never dereferenced.
+type xx pointer struct {
+  xx *myType // that must not be dereferenced
+}
+// There might be cases where it is desirable to dereference,
+// what are they ?
+// the goal of this question is to udnerstand if
+// the sytem should emit error or warning on bad usage detection.
+
 // trait ?
 
 // type Formatter interface{
