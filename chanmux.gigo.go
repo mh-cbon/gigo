@@ -116,31 +116,18 @@ func (m *TodosChanMuxer) Stop() bool {
 template <:.Name>ChanMuxer struct {
   ops chan func(<:.Name>)
   stop chan bool
-  started chan bool
 }
 
 // for every method of ., create a new method on ChanMux
 <:range $m := .Methods> func (m *<:.Name>ChanMuxer) <:$m.Name>(<:$m.GetArgsBlock | joinexpr ",">) <:$m.Out> {
-  res := make(chan <:.Name>ChanMuxer<:$m.Name>)
+  res := make(chan []interface{})
   m.ops <- func(embed <:.Name>) {
-    var ret <:.Name>ChanMuxer<:$m.Name>
     <:$m.Out | joinexpr ","> := embed.<:$m.GetName>(<:$m.GetArgsNames | joinexpr ",">)
-    ret = make<:.Name>ChanMuxer<:$m.Name>(<:$m.Out | joinexpr ",">)
-    res <- ret
+    res <- []interface{<:$m.Out | joinexpr ",">}
   }
-  return <-res
-}
-
-// for every method of ., create a type to represent out parameters
-<:range $m := .Methods> type <:.Name>ChanMuxer<:$m.Name> struct{
-    <:range $p := $m.Out>
-      <:$p>
-    <:end>
-}
-
-// for every method of ., create a ctor of a type to represent out parameters
-<:range $m := .Methods> make<:.Name>ChanMuxer<:$m.Name>(<:$m.Out | joinexpr ",">) <:.Name>ChanMuxer<:$m.Name> {
-  return <:.Name>ChanMuxer<:$m.Name>{<:$m.Out | joinexpr "\n">} // somethign to work here.
+  ret := <-res
+  // how to return ret ?
+  return <:$m.Out | joinexpr ",">
 }
 
 func (m *<:.Name>ChanMuxer) loop() {
@@ -151,18 +138,14 @@ func (m *<:.Name>ChanMuxer) loop() {
       op(embed)
     case s:=<-m.stop:
       return
-    default:
-      m.started<-true
     }
   }
 }
 
-func (m *<:.Name>ChanMuxer) Start() bool {
+func (m *<:.Name>ChanMuxer) Start()  {
   m.loop()
-  return <-m.started
 }
 
-func (m *<:.Name>ChanMuxer) Stop() bool {
-  s := <-m.stop
-  return s
+func (m *<:.Name>ChanMuxer) Stop()  {
+  m.stop<-true
 }
